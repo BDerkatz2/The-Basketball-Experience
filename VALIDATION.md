@@ -1,5 +1,7 @@
 # Validation record
 
+October 5: product/play archive and restore controls are available on web and native. Existing orders and play records are preserved; archived products cannot be newly ordered. **110 tests pass**, plus web build and iOS/Android exports. See [ARCHIVING.md](ARCHIVING.md).
+
 October 4 verification: **107 automated tests pass**, and web production build plus iOS/Android exports pass. The new waiver-export HTTP authorization assertions also pass. Native administration, typed forms, waiver exports, document expiry, recurrence updates and protected cloud playback are implemented locally. See [ADMINISTRATION-UPDATE.md](ADMINISTRATION-UPDATE.md) and [DESIGN-HANDOFF.md](DESIGN-HANDOFF.md). Live providers, physical devices and production release remain unverified.
 
 October 3 store/scoring batch: **102 tests pass**, including concurrent HTTP reservations/checkouts and signed synthetic cart payment, credit/cancellation invariants, variant reports, route bounds and stale game-control rejection. Web build and iOS/Android exports pass. Browser verified cart reservation/order/cancellation, clock start/pause/possession, and a saved defensive play. Launch preflight reports missing configuration; no provider or device acceptance is claimed. See [STORE-PLAYBOOK-SCORING.md](STORE-PLAYBOOK-SCORING.md).

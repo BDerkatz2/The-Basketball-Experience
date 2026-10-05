@@ -162,6 +162,8 @@ export function storeAction(db, u, action, b) {
       const p = player(db, u, l.playerId),
         product = db.products.find((p) => p.id === l.productId),
         v = product?.variants.find((v) => v.id === l.variantId);
+      if (product?.archivedAt)
+        fail("This product is archived. Remove it from your cart.", 409);
       if (!v || !product.sizes.includes(l.size))
         fail("Choose a valid color and size.");
       if (familyId && familyId !== p.familyId)
@@ -208,6 +210,8 @@ export function storeAction(db, u, action, b) {
       const p = player(db, u, l.playerId),
         product = db.products.find((p) => p.id === l.productId),
         v = product?.variants.find((v) => v.id === l.variantId);
+      if (product?.archivedAt)
+        fail("This product is archived. Rebuild your cart.", 409);
       if (!v || (v.stock[l.size] ?? 0) < l.quantity)
         fail("Reserved inventory needs staff reconciliation.", 409);
       const free =

@@ -933,35 +933,42 @@ function App() {
               </div>
               <CartStore data={data} act={act} busy={busy} />
               <div className="program-grid">
-                {data.products.map((p, i) => (
-                  <article key={p.id} className="card product-card">
-                    <div className={"product-art product" + i}>
-                      <Shirt hoodie={i === 1} number={i === 2 ? "12" : null} />
-                      {p.creditEligible && <Badge>TEE CREDITS ELIGIBLE</Badge>}
-                    </div>
-                    <div className="program-body">
-                      <small className="eyebrow">
-                        {p.category} / {p.color}
-                      </small>
-                      <h3>{p.name}</h3>
-                      <div className="program-bottom">
-                        <b>{money(p.price)}</b>
-                        {parent && (
-                          <Button
-                            secondary
-                            onClick={() =>
-                              document
-                                .querySelector(".operations-panel")
-                                ?.scrollIntoView({ behavior: "smooth" })
-                            }
-                          >
-                            Build cart <Plus size={16} />
-                          </Button>
+                {data.products
+                  .filter((p) => !p.archivedAt)
+                  .map((p, i) => (
+                    <article key={p.id} className="card product-card">
+                      <div className={"product-art product" + i}>
+                        <Shirt
+                          hoodie={i === 1}
+                          number={i === 2 ? "12" : null}
+                        />
+                        {p.creditEligible && (
+                          <Badge>TEE CREDITS ELIGIBLE</Badge>
                         )}
                       </div>
-                    </div>
-                  </article>
-                ))}
+                      <div className="program-body">
+                        <small className="eyebrow">
+                          {p.category} / {p.color}
+                        </small>
+                        <h3>{p.name}</h3>
+                        <div className="program-bottom">
+                          <b>{money(p.price)}</b>
+                          {parent && (
+                            <Button
+                              secondary
+                              onClick={() =>
+                                document
+                                  .querySelector(".operations-panel")
+                                  ?.scrollIntoView({ behavior: "smooth" })
+                              }
+                            >
+                              Build cart <Plus size={16} />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </article>
+                  ))}
               </div>
               <section className="card space-top">
                 <CardHead label={staff ? "Fulfillment queue" : "Your orders"} />

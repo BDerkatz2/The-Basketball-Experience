@@ -149,6 +149,8 @@ export function mutate(db, u, action, b) {
       fail("Parent or staff access required.", 403);
     const p = player(db, u, b.playerId),
       product = db.products.find((x) => x.id === b.productId);
+    if (product?.archivedAt)
+      fail("This product is archived and unavailable for new orders.", 409);
     if (!product || !product.sizes.includes(b.size))
       fail("Choose a valid product and size.");
     const quantity = integer(b.quantity, 1, 10);

@@ -219,83 +219,85 @@ export function Store({ data, act, busy }) {
         Every order is linked to a player and their coach. Two tee credits per
         player per calendar year.
       </Text>
-      {data.products.map((p) => (
-        <View style={s.card} key={p.id}>
-          <Text style={s.tag}>
-            {p.category} · {p.color}
-          </Text>
-          <Text style={s.title}>{p.name}</Text>
-          <Text style={s.label}>${p.price} CAD</Text>
-          {parent && product !== p.id && (
-            <Button
-              label="Choose options"
-              onPress={() => {
-                setProduct(p.id);
-                setSize(p.sizes[0]);
-                setQuantity("1");
-              }}
-            />
-          )}
-          {product === p.id && (
-            <>
-              <Choose
-                label="Player for this order"
-                rows={data.players}
-                value={playerId}
-                onChange={setPlayer}
-              />
-              <Choose
-                label="Size"
-                rows={p.sizes.map((size) => ({
-                  id: size,
-                  name: `${size} (${p.stock[size]} left)`,
-                }))}
-                value={size}
-                onChange={setSize}
-              />
-              <Text style={s.label}>Quantity</Text>
-              <TextInput
-                accessibilityLabel="Quantity"
-                style={s.input}
-                keyboardType="number-pad"
-                value={quantity}
-                onChangeText={setQuantity}
-              />
-              {p.creditEligible && (
-                <View style={s.options}>
-                  <Switch
-                    accessibilityLabel="Use tee credits"
-                    value={useCredits}
-                    onValueChange={setCredits}
-                  />
-                  <Text style={s.label}>
-                    Use tee credits ({Math.max(0, 2 - used)} left)
-                  </Text>
-                </View>
-              )}
+      {data.products
+        .filter((p) => !p.archivedAt)
+        .map((p) => (
+          <View style={s.card} key={p.id}>
+            <Text style={s.tag}>
+              {p.category} · {p.color}
+            </Text>
+            <Text style={s.title}>{p.name}</Text>
+            <Text style={s.label}>${p.price} CAD</Text>
+            {parent && product !== p.id && (
               <Button
-                label="Place order"
-                disabled={busy || !playerId}
-                onPress={async () => {
-                  if (
-                    await act("order", {
-                      productId: p.id,
-                      playerId,
-                      size,
-                      quantity: Number(quantity),
-                      useCredits,
-                    })
-                  )
-                    setProduct(null);
+                label="Choose options"
+                onPress={() => {
+                  setProduct(p.id);
+                  setSize(p.sizes[0]);
+                  setQuantity("1");
                 }}
               />
-              <Text style={s.body}>
-                This records the order. No card is charged here.
-              </Text>
-            </>
-          )}
-        </View>
-      ))}
+            )}
+            {product === p.id && (
+              <>
+                <Choose
+                  label="Player for this order"
+                  rows={data.players}
+                  value={playerId}
+                  onChange={setPlayer}
+                />
+                <Choose
+                  label="Size"
+                  rows={p.sizes.map((size) => ({
+                    id: size,
+                    name: `${size} (${p.stock[size]} left)`,
+                  }))}
+                  value={size}
+                  onChange={setSize}
+                />
+                <Text style={s.label}>Quantity</Text>
+                <TextInput
+                  accessibilityLabel="Quantity"
+                  style={s.input}
+                  keyboardType="number-pad"
+                  value={quantity}
+                  onChangeText={setQuantity}
+                />
+                {p.creditEligible && (
+                  <View style={s.options}>
+                    <Switch
+                      accessibilityLabel="Use tee credits"
+                      value={useCredits}
+                      onValueChange={setCredits}
+                    />
+                    <Text style={s.label}>
+                      Use tee credits ({Math.max(0, 2 - used)} left)
+                    </Text>
+                  </View>
+                )}
+                <Button
+                  label="Place order"
+                  disabled={busy || !playerId}
+                  onPress={async () => {
+                    if (
+                      await act("order", {
+                        productId: p.id,
+                        playerId,
+                        size,
+                        quantity: Number(quantity),
+                        useCredits,
+                      })
+                    )
+                      setProduct(null);
+                  }}
+                />
+                <Text style={s.body}>
+                  This records the order. No card is charged here.
+                </Text>
+              </>
+            )}
+          </View>
+        ))}
       <Text style={s.title}>Your orders</Text>
       {data.orders.map((o) => (
         <View key={o.id} style={s.card}>

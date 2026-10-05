@@ -927,6 +927,7 @@ const startFrame = [
 ];
 export function CoachingTools({ data, act }) {
   const [tab, setTab] = useState("Playbook"),
+    [showArchived, setShowArchived] = useState(false),
     [play, setPlay] = useState(null),
     [drill, setDrill] = useState(null),
     [video, setVideo] = useState(null);
@@ -958,19 +959,40 @@ export function CoachingTools({ data, act }) {
                   frames: [structuredClone(startFrame)],
                 }),
               )}
+            {coach(data) && (
+              <label>
+                <input
+                  type="checkbox"
+                  checked={showArchived}
+                  onChange={(e) => setShowArchived(e.target.checked)}
+                />{" "}
+                Show archived plays
+              </label>
+            )}
             <div className="studio-grid">
-              {data.plays?.map((p) => (
-                <div className="mini-card" key={p.id}>
-                  <h3>{p.name}</h3>
-                  <p>
-                    {title(data.teams, p.teamId)} · {p.frames.length} frames
-                  </p>
-                  <CourtBoard frames={p.frames} routes={p.routes || []} />
-                  <p>{p.notes}</p>
-                  {coach(data) &&
-                    button("Edit play", () => setPlay(structuredClone(p)))}
-                </div>
-              ))}
+              {data.plays
+                ?.filter((p) => !!p.archivedAt === showArchived)
+                .map((p) => (
+                  <div className="mini-card" key={p.id}>
+                    <h3>{p.name}</h3>
+                    <p>
+                      {title(data.teams, p.teamId)} · {p.frames.length} frames{" "}
+                      {p.archivedAt ? "· Archived" : ""}
+                    </p>
+                    <CourtBoard frames={p.frames} routes={p.routes || []} />
+                    <p>{p.notes}</p>
+                    {coach(data) &&
+                      button("Edit play", () => setPlay(structuredClone(p)))}
+                    {coach(data) &&
+                      button(
+                        p.archivedAt ? "Restore play" : "Archive play",
+                        () =>
+                          act(p.archivedAt ? "play-restore" : "play-archive", {
+                            id: p.id,
+                          }),
+                      )}
+                  </div>
+                ))}
             </div>
             {!data.plays?.length && (
               <p className="feature-empty">
@@ -1724,10 +1746,22 @@ export function Management({ data, act }) {
             )}
           </div>
         )}
+        {kind === "Products" && (
+          <p>
+            Archiving hides a product and releases unsubmitted carts containing
+            it. Existing orders and inventory are retained. Restore it here at
+            any time.
+          </p>
+        )}
         {config.rows.map((row) => (
           <div className="feature-row" key={row.id}>
             <div>
-              <b>{row.name}</b>
+              <b>
+                {row.name}
+                {kind === "Products" && row.archivedAt
+                  ? " · Archived (hidden from store)"
+                  : ""}
+              </b>
               <p>
                 {row.email ||
                   row.division ||
@@ -1736,6 +1770,14 @@ export function Management({ data, act }) {
                   title(data.teams, row.teamId)}
               </p>
             </div>
+            {kind === "Products" &&
+              button(
+                row.archivedAt ? "Restore product" : "Archive product",
+                () =>
+                  act(row.archivedAt ? "product-restore" : "product-archive", {
+                    id: row.id,
+                  }),
+              )}
             {button("Edit", () =>
               setEdit({
                 ...row,

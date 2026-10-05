@@ -59,14 +59,18 @@ function Pick({ label, rows, value, set }) {
   );
 }
 export function NativeCart({ data, act, busy }) {
-  const [productId, setProduct] = useState(data.products[0]?.id || ""),
+  const [productId, setProduct] = useState(
+      data.products.find((p) => !p.archivedAt)?.id || "",
+    ),
     [variantId, setVariant] = useState("default"),
     [playerId, setPlayer] = useState(data.players[0]?.id || ""),
-    [size, setSize] = useState(data.products[0]?.sizes[0] || ""),
+    [size, setSize] = useState(
+      data.products.find((p) => !p.archivedAt)?.sizes[0] || "",
+    ),
     [quantity, setQuantity] = useState("1"),
     [useCredits, setCredits] = useState(true),
     [lines, setLines] = useState([]);
-  const p = data.products.find((p) => p.id === productId),
+  const p = data.products.find((p) => p.id === productId && !p.archivedAt),
     v = p?.variants.find((v) => v.id === variantId) || p?.variants[0],
     c = data.carts?.find(
       (c) => c.status === "Reserved" && c.ownerId === data.user.id,
@@ -92,7 +96,7 @@ export function NativeCart({ data, act, busy }) {
       </Text>
       <Pick
         label="Product"
-        rows={data.products}
+        rows={data.products.filter((p) => !p.archivedAt)}
         value={productId}
         set={(id) => {
           setProduct(id);
@@ -353,6 +357,7 @@ const initialFrame = [
 ];
 export function NativePlaybook({ data, act, busy }) {
   const [playing, setPlaying] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [editing, setEditing] = useState(null),
     [name, setName] = useState(""),
     [notes, setNotes] = useState(""),
@@ -397,19 +402,46 @@ export function NativePlaybook({ data, act, busy }) {
   return (
     <View style={box}>
       <Text style={{ fontSize: 24 }}>Mobile playbook</Text>
-      {data.plays.map((p) => (
-        <View key={p.id} style={box}>
-          <Text>
-            {p.name} · {p.frames.length} frames ·{" "}
-            {p.frames[0].length === 10 ? "With defenders" : "Offense"}
-          </Text>
-          <Text>{p.notes}</Text>
-          <Btn
-            title={canEdit ? "Open / edit play" : "View play"}
-            onPress={() => load(p)}
-          />
-        </View>
-      ))}
+      {canEdit && (
+        <Btn
+          title={showArchived ? "Show active plays" : "Show archived plays"}
+          onPress={() => setShowArchived(!showArchived)}
+        />
+      )}
+      {data.plays
+        .filter((p) => !!p.archivedAt === showArchived)
+        .map((p) => (
+          <View key={p.id} style={box}>
+            <Text>
+              {p.name} · {p.frames.length} frames ·{" "}
+              {p.frames[0].length === 10 ? "With defenders" : "Offense"}
+            </Text>
+            <Text>
+              {p.notes}
+              {p.archivedAt ? " · Archived" : ""}
+            </Text>
+            {canEdit && (
+              <Btn
+                title={p.archivedAt ? "Restore play" : "Archive play"}
+                disabled={busy}
+                onPress={async () => {
+                  if (
+                    await act(p.archivedAt ? "play-restore" : "play-archive", {
+                      id: p.id,
+                    })
+                  ) {
+                    setEditing(null);
+                    setPlaying(false);
+                  }
+                }}
+              />
+            )}
+            <Btn
+              title={canEdit ? "Open / edit play" : "View play"}
+              onPress={() => load(p)}
+            />
+          </View>
+        ))}
       {canEdit && <Btn title="Create play" onPress={() => load({})} />}{" "}
       {editing && (
         <>
@@ -645,6 +677,28 @@ export function NativeInventory({ data, act, busy }) {
   return (
     <View style={box}>
       <Text style={{ fontSize: 22 }}>Inventory</Text>
+      <Text>
+        Archiving hides products and releases unsubmitted carts containing them.
+        Existing orders and inventory remain. Restore here at any time.
+      </Text>
+      {p && (
+        <>
+          <Text>
+            {p.archivedAt
+              ? "Archived — hidden from store"
+              : "Available in store"}
+          </Text>
+          <Btn
+            title={p.archivedAt ? "Restore product" : "Archive product"}
+            disabled={busy}
+            onPress={() =>
+              act(p.archivedAt ? "product-restore" : "product-archive", {
+                id: p.id,
+              })
+            }
+          />
+        </>
+      )}
       <Pick
         label="Product"
         rows={data.products}

@@ -7,13 +7,17 @@ const Button = ({ children, ...props }) => (
 );
 export function CartStore({ data, act, busy }) {
   const [lines, setLines] = useState([]),
-    [productId, setProduct] = useState(data.products[0]?.id || ""),
+    [productId, setProduct] = useState(
+      data.products.find((p) => !p.archivedAt)?.id || "",
+    ),
     [playerId, setPlayer] = useState(data.players[0]?.id || ""),
     [variantId, setVariant] = useState("default"),
-    [size, setSize] = useState(data.products[0]?.sizes[0] || ""),
+    [size, setSize] = useState(
+      data.products.find((p) => !p.archivedAt)?.sizes[0] || "",
+    ),
     [quantity, setQuantity] = useState(1),
     [credits, setCredits] = useState(true);
-  const p = data.products.find((p) => p.id === productId),
+  const p = data.products.find((p) => p.id === productId && !p.archivedAt),
     v = p?.variants.find((v) => v.id === variantId) || p?.variants[0],
     c = data.carts?.find(
       (c) => c.status === "Reserved" && c.ownerId === data.user.id,
@@ -70,11 +74,13 @@ export function CartStore({ data, act, busy }) {
               setVariant("default");
             }}
           >
-            {data.products.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} · ${p.price} CAD
-              </option>
-            ))}
+            {data.products
+              .filter((p) => !p.archivedAt)
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} · ${p.price} CAD
+                </option>
+              ))}
           </select>
         </label>
         <label>

@@ -262,7 +262,11 @@ export function visible(db, u) {
       (n) => n.userId === u.id && !n.suppressed && preferences(db, u).inApp,
     ),
     gameStats: db.gameStats.filter((s) => ids.has(s.playerId)),
-    plays: db.plays.filter((p) => ch.includes(p.teamId)),
+    plays: db.plays.filter(
+      (p) =>
+        ch.includes(p.teamId) &&
+        (!p.archivedAt || isStaff(u) || u.role === "coach"),
+    ),
     videos: db.videos.filter((v) => !v.deletedAt && ch.includes(v.teamId)),
     staffProfiles: db.staffProfiles.filter(
       (p) => u.role === "admin" || p.userId === u.id,
@@ -334,6 +338,36 @@ export function mutate(db, u, action, b) {
   });
 }
 function change(db, u, action, b) {
+  if (
+    [
+      "product-archive",
+      "product-restore",
+      "play-archive",
+      "play-restore",
+    ].includes(action)
+  ) {
+    const product = action.startsWith("product-");
+    if (product) staff(u);
+    else coach(u);
+    const row = (product ? db.products : db.plays).find((x) => x.id === b.id);
+    if (!row) fail("Item not found.", 404);
+    if (!product) team(db, u, row.teamId);
+    const archived = action.endsWith("archive");
+    row.archivedAt = archived ? row.archivedAt || stamp() : null;
+    row.archivedBy = archived ? u.id : null;
+    if (product && archived) {
+      for (const cart of db.carts.filter(
+        (c) =>
+          c.status === "Reserved" &&
+          c.lines.some((l) => l.productId === row.id),
+      )) {
+        cart.status = "Released";
+        cart.releaseReason =
+          "A product in this cart was archived. Please rebuild your cart.";
+      }
+    }
+    return;
+  }
   if (action === "series-reschedule") {
     const rows = rescheduleSeries(db, u, b, conflicts);
     for (const row of rows) {
