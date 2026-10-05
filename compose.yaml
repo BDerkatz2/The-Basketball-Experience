@@ -1,0 +1,20 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:4173:4173"
+    env_file:
+      - .env.production
+    environment:
+      APP_MODE: accounts
+      HOST: 0.0.0.0
+      DATA_FILE: /app/data/accounts.json
+    volumes:
+      - app-data:/app/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+volumes:
+  app-data:

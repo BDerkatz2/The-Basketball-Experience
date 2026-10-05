@@ -1,0 +1,343 @@
+@import url("https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600&display=swap");
+
+/* Website identity: sky blue, charcoal, white, condensed athletic headings. */
+.workflow-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 24px;
+  padding: 24px;
+}
+.workflow-grid form {
+  margin-bottom: 20px;
+}
+@media (max-width: 700px) {
+  .sidebar:not(.show) {
+    visibility: hidden;
+  }
+  .sidebar.show {
+    visibility: visible;
+  }
+  button,
+  select {
+    min-height: 44px;
+  }
+  .feature-actions {
+    flex-wrap: wrap;
+  }
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+:root {
+  --blue: #38b6ff;
+  --forest: #17212b;
+  --muted: #596b7a;
+  --line: #dce5eb;
+  --cream: #f2f7fa;
+  --orange: #38b6ff;
+  color: #17212b;
+  background: #f5f7f9;
+  font-family: Arial, Helvetica, sans-serif;
+}
+h1,
+h2,
+h3,
+.sidebar nav button,
+.btn,
+.hero button {
+  font-family: "Oswald", "Arial Narrow", sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.2px;
+}
+h1 {
+  font-size: 36px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 23px;
+}
+.brand-logo {
+  width: 200px;
+  height: 76px;
+  object-fit: contain;
+}
+.brand > span {
+  display: none;
+}
+.btn {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #102333;
+  border-radius: 2px;
+  font-size: 15px;
+  padding: 11px 22px;
+}
+.btn:hover {
+  background: #73cdff;
+}
+.btn.secondary {
+  border-color: #b9ccd9;
+  color: #17212b;
+  background: white;
+}
+.btn.secondary:hover {
+  background: #e9f6ff;
+}
+.text-btn,
+.map-link {
+  color: #006aab;
+}
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid #0077bb;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline-color: #0077bb;
+}
+input[type="checkbox"] {
+  accent-color: #0077bb;
+}
+.card,
+.mini-card,
+.program-card,
+.product-card,
+.notice {
+  border-radius: 3px;
+}
+.card-head {
+  border-bottom: 1px solid var(--line);
+}
+.topbar {
+  background: white;
+  color: #596b7a;
+}
+.top-avatar,
+.avatar {
+  background: #e4f4ff;
+  color: #174564;
+}
+.main main {
+  max-width: 1440px;
+}
+.page-heading {
+  margin-bottom: 25px;
+}
+.page-heading .eyebrow {
+  color: #006aab;
+}
+.hero {
+  height: 390px;
+  border-radius: 2px;
+  padding: 40px;
+  border-bottom: 5px solid var(--blue);
+  background:
+    linear-gradient(90deg, rgba(8, 19, 30, 0.9), rgba(8, 19, 30, 0.28)),
+    url("/brand/training.jpg") center 44% / cover;
+}
+.hero h2 {
+  color: white;
+  font-size: clamp(42px, 4.3vw, 66px);
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  line-height: 1.07;
+}
+.hero p {
+  color: #fff;
+  font-size: 13px;
+  max-width: 360px;
+}
+.hero-tag {
+  color: #85d4ff;
+  font-size: 11px;
+}
+.hero-tag span {
+  background: var(--blue);
+}
+.hero .court,
+.login-art .court,
+.hero-caption {
+  display: none;
+}
+.hero button {
+  border: 0;
+  border-radius: 2px;
+  background: var(--blue);
+  color: #102333;
+  padding: 11px 20px;
+  font-size: 16px;
+}
+.hero button:hover {
+  background: #73cdff;
+}
+.badge {
+  background: #e6f5ff;
+  color: #135a86;
+}
+.stats-grid {
+  border-top: 3px solid var(--blue);
+  padding-top: 20px;
+}
+.login {
+  background: white;
+}
+.login-art {
+  background:
+    linear-gradient(180deg, rgba(9, 22, 32, 0.28), rgba(9, 22, 32, 0.9)),
+    url("/brand/training.jpg") center/cover;
+  border-bottom: 5px solid var(--blue);
+}
+.login-art .brand {
+  background: white;
+  width: fit-content;
+  padding: 7px 18px;
+}
+.login-art h1 {
+  color: white;
+  font-family: "Oswald", sans-serif;
+  letter-spacing: 0.3px;
+  font-weight: 500;
+}
+.login-art > .eyebrow {
+  color: #85d4ff;
+}
+.login-art > p:not(.eyebrow) {
+  color: #eef8ff;
+}
+.login-form > h2 {
+  font-family: "Oswald", sans-serif;
+  font-size: 36px;
+}
+.sidebar nav button.active {
+  background: #e6f5ff;
+  color: #005e95;
+  border-radius: 2px;
+  box-shadow: inset 0 -3px var(--blue);
+}
+.sidebar nav button:hover {
+  background: #f0f8ff;
+}
+.sidebar nav button {
+  color: #263c4d;
+}
+.season-dot,
+.demo-dot {
+  background: #0077bb;
+}
+@media (min-width: 981px) {
+  .sidebar {
+    position: relative;
+    width: 100%;
+    inset: auto;
+    padding: 12px 42px 0;
+    border-right: 0;
+    border-bottom: 2px solid var(--blue);
+    display: grid;
+    grid-template-columns: 220px 1fr auto;
+    align-items: center;
+    column-gap: 30px;
+  }
+  .sidebar .brand {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .workspace {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    border: 0;
+    margin: 0;
+  }
+  .sidebar-bottom {
+    grid-column: 3;
+    grid-row: 1;
+    margin: 0;
+    padding: 0;
+  }
+  .sidebar-bottom .season,
+  .nav-label {
+    display: none;
+  }
+  .sidebar nav {
+    grid-column: 1/-1;
+    grid-row: 2;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 10px;
+  }
+  .sidebar nav button {
+    padding: 13px 14px;
+    font-size: 16px;
+    text-transform: uppercase;
+    border-radius: 0;
+  }
+  .sidebar nav button svg,
+  .nav-dot {
+    display: none;
+  }
+  .main {
+    margin-left: 0;
+  }
+  .topbar {
+    height: 46px;
+  }
+  .overview-grid {
+    grid-template-columns: minmax(0, 2fr) minmax(290px, 1fr);
+  }
+}
+@media (min-width: 701px) and (max-width: 980px) {
+  .brand-logo {
+    width: 160px;
+  }
+  .sidebar {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+  .hero {
+    padding: 30px;
+  }
+}
+@media (max-width: 700px) {
+  .brand-logo {
+    width: 180px;
+  }
+  .hero {
+    height: 360px;
+    padding: 26px;
+  }
+  .hero h2 {
+    font-size: 48px;
+  }
+  .hero p {
+    max-width: 255px;
+  }
+  h1 {
+    font-size: 30px;
+  }
+  .login-art {
+    min-height: 350px;
+  }
+  .login-art > .eyebrow {
+    margin-top: 34px;
+  }
+  .login-art h1 {
+    font-size: 38px;
+  }
+  .topbar {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .page-heading {
+    align-items: flex-start;
+  }
+  .page-heading > .btn {
+    white-space: normal;
+    padding: 10px 13px;
+  }
+}

@@ -1,0 +1,27 @@
+# Administration and release preparation — October 4, 2026
+
+## Implemented locally
+
+- Native More → Administration: program creation/editing; age/membership/window eligibility; season copy; recurring practices; preview/commit tournament schedules; administrator invitations; staff profile and document upload/download; document metadata and administrator review. Invitations are disabled in demo mode and are not emailed automatically. This screen reuses server authorization and validations. Staff document upload accepts PDF/JPEG/PNG up to 20 MB on mobile.
+- Registration form fields now include text, long answer, checkbox, email, number, date and select. Staff configure select choices in the web form builder; parents answer all types on web/native. Answers are validated on the server and retained with the original form version and signed text.
+- Web family/operations and native administration can download scoped signed waiver records as JSON. Staff cannot manufacture approval: an administrator can record a supplied organization approval reference against a particular form version. No actual wording was supplied or approved during this work. Future versions start without approval.
+- Staff documents have titles, expiry dates and superseded flags. Updating metadata or uploading a new document returns the profile to review. Expired, non-superseded documents block approval. Old evidence stays in history. This does not validate document authenticity or perform malware scanning. Supersession and replacement adequacy require the administrator's review.
+- Practice recurrence supports every 1–12 weeks, skipped dates and local time across daylight saving. Staff may shift this and following active sessions by days and set a new local time, with all conflicts checked before any changes are applied. Earlier history and cancelled sessions are retained. Tournament planning on mobile exposes teams, courts, blackouts, weekdays, rounds, daily limits and rest. The planner remains bounded/greedy, not a global optimizer or arbitrary calendar recurrence engine.
+- Native plays can run/pause a 900 ms frame sequence. Editing, defenders and route records remain available. This is frame playback, not smooth path interpolation or a native graphical route animation engine.
+- Web/native uploaded-video playback now uses an authenticated media endpoint. It serves local files until a cloud copy is recorded; then it proxies private S3 content, including single byte-range requests. Team access and soft deletion are checked before provider access. It does not expose public or presigned URLs. Real S3 playback has not been verified. Cloud copying and Drive imports remain explicit actions, not continuous synchronization. Existing Drive refresh-token configuration still needs an organization-authorized connection; interactive OAuth onboarding is outstanding.
+- Added [design and workflow handoff](DESIGN-HANDOFF.md) and an editable [SVG design board](public/design-system.svg) for import into Figma. No native Figma component file or organization branding approval was created.
+
+## Verification
+
+107 tests passed, including form typing/version preservation, expiry/supersession permissions, DST recurrence and atomic following-session changes, private S3 proxy byte ranges/deletion scope, signed synthetic payment journeys, and encrypted local backup/restore. Web build and iOS/Android exports passed. These are local/mocked-provider results, not live integration or physical-device acceptance. The earlier approval-review usage-limit interruption is resolved for these checks. The registration journey also verifies family-scoped waiver downloads and rejects coach exports. Browser validation saved a versioned sample select-field form; organization approval remains unrecorded.
+
+## Still requires organization input or external execution
+
+1. Approved waiver wording and approval reference; approved branding/assets and a Figma project for the final component library.
+2. Hosting/domain selection and HTTPS staging; organization-owned Stripe test/webhook, verified email sender, Expo/APNs/FCM, private S3 and MongoDB replica-set/Atlas credentials. Store secrets in environment configuration, not chat or client code.
+3. Authorized Google Drive folder/account connection and provider-backed cloud copy/playback/restore tests. Continuous synchronization, OAuth onboarding, video transcoding and background/chunked transfers remain further development.
+4. Actual Stripe checkout/decline/refund/renewal journeys; email inbox/delivery checks; phone push and receipt checks; database transactions, backup and restore. Live Stripe mode remains deliberately disabled.
+5. Physical iPhone/Android testing, screen-reader review, production security/load review, signed binaries, Apple/Google listings and store submissions. EAS/Docker configuration exists; no release was performed.
+6. Remaining parity: native form authoring/waiver approval, invitation revoke/reset management, provider refund submission/reconciliation and operational cloud/service controls remain web tasks. Finer recurrence/tournament optimization remains outstanding.
+
+Use [LAUNCH-RUNBOOK.md](LAUNCH-RUNBOOK.md) and `node scripts/launch-preflight.mjs` for the configuration and acceptance checklist. Local backup recovery has automated coverage; production database/cloud recovery must be exercised after those services are configured.

@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "The Basketball Experience",
+    "slug": "basketball-experience",
+    "version": "0.1.0",
+    "platforms": ["ios", "android"],
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {},
+    "extra": {
+      "environment": "local-demo"
+    },
+    "scheme": "tbe",
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Record basketball clips to share with your team.",
+          "microphonePermission": "Record audio with your basketball clips.",
+          "photosPermission": "Choose basketball videos to share with your team."
+        }
+      ],
+      "expo-video",
+      "expo-notifications"
+    ]
+  }
+}

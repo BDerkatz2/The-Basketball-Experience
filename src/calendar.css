@@ -1,0 +1,139 @@
+.calendar-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 20px 24px;
+  border-bottom: 1px solid #edf5fa;
+}
+.calendar-controls h3 {
+  margin: 0;
+}
+.calendar-controls > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.calendar-controls label {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.calendar-controls input[type="date"] {
+  padding: 8px;
+  border: 1px solid #edf5fa;
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+}
+.calendar-zone {
+  padding: 0 24px;
+  color: #35495b;
+  font-size: 12px;
+}
+.calendar-scroll {
+  overflow-x: auto;
+}
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  min-width: 650px;
+}
+.calendar-weekday {
+  padding: 12px;
+  font-size: 12px;
+  color: #35495b;
+  text-align: center;
+  background: #f7f9fb;
+}
+.calendar-cell {
+  min-height: 140px;
+  padding: 8px;
+  border: 1px solid #edf5fa;
+  min-width: 0;
+}
+.calendar-grid.week .calendar-cell {
+  min-height: 240px;
+}
+.calendar-cell.outside {
+  background: #f7f9fb;
+}
+.calendar-cell.chosen {
+  box-shadow: inset 0 0 0 2px #35495b;
+}
+.calendar-day {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  padding: 5px 8px;
+  color: #171d24;
+  font: inherit;
+  cursor: pointer;
+}
+.calendar-day[aria-current="date"] {
+  background: #171d24;
+  color: white;
+}
+.calendar-day span {
+  font-size: 10px;
+}
+.calendar-session {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  margin-top: 6px;
+  background: #edf5fa;
+  color: #171d24;
+  padding: 7px;
+  font: inherit;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.calendar-session small {
+  font-size: 10px;
+  opacity: 0.8;
+  margin-bottom: 3px;
+}
+.calendar-session.cancelled {
+  background: #f3e6dd;
+}
+.calendar-more {
+  border: 0;
+  background: none;
+  color: #171d24;
+  font-size: 11px;
+  margin: 8px 0;
+  cursor: pointer;
+}
+.family-calendar button:focus-visible {
+  outline: 3px solid #bf8b47;
+  outline-offset: 2px;
+}
+@media (max-width: 600px) {
+  .calendar-controls {
+    padding: 16px;
+  }
+  .calendar-grid {
+    min-width: 590px;
+  }
+  .calendar-cell {
+    padding: 5px;
+    min-height: 115px;
+  }
+  .calendar-controls h3 {
+    width: 100%;
+    order: -1;
+  }
+  .calendar-zone {
+    padding: 0 16px;
+  }
+}
