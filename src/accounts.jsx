@@ -1,11 +1,23 @@
 import React, { useState } from "react";
-export function AccountLogin({ onLogin }) {
+export function AccountLogin({
+  onLogin,
+  registrationEnabled = true,
+  pilot = false,
+}) {
   const [register, setRegister] = useState(false),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   return (
     <div className="login-form">
-      <span className="badge">YOUR COMMUNITY ACCOUNT</span>
+      <span className="badge">
+        {pilot ? "PRIVATE COMPANY PILOT" : "YOUR COMMUNITY ACCOUNT"}
+      </span>
+      {pilot && (
+        <p>
+          Invitation-only evaluation. Use fictional players and test records.
+          Payments and external delivery are disabled.
+        </p>
+      )}
       <h2>{register ? "Join your basketball community." : "Welcome back."}</h2>
       <form
         className="feature-form"
@@ -84,17 +96,19 @@ export function AccountLogin({ onLogin }) {
       >
         Forgot your password?
       </button>
-      <button
-        className="text-btn space-top"
-        onClick={() => {
-          setRegister(!register);
-          setError("");
-        }}
-      >
-        {register
-          ? "Already have an account? Sign in"
-          : "New here? Create an account"}
-      </button>
+      {registrationEnabled && (
+        <button
+          className="text-btn space-top"
+          onClick={() => {
+            setRegister(!register);
+            setError("");
+          }}
+        >
+          {register
+            ? "Already have an account? Sign in"
+            : "New here? Create an account"}
+        </button>
+      )}
     </div>
   );
 }

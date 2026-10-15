@@ -1,3 +1,4 @@
+import { deploymentSettings } from "./deployment.js";
 import express from "express";
 import { mountOperations } from "./operations-api.js";
 import { report } from "./reports.js";
@@ -46,6 +47,9 @@ try {
 } catch (e) {
   if (e.code !== "ENOENT") throw e;
 }
+const deployment = deploymentSettings();
+if (!process.env.APP_URL && deployment.appUrl)
+  process.env.APP_URL = deployment.appUrl;
 const accountMode = process.env.APP_MODE === "accounts";
 let stripe = null;
 if (process.env.STRIPE_SECRET_KEY) {
@@ -153,6 +157,8 @@ app.get("/api/config", (_, res) =>
   res.json({
     mode: accountMode ? "accounts" : "local-demo",
     payments: stripe ? "stripe-test" : "not-connected",
+    pilot: deployment.pilot,
+    registrationEnabled: deployment.registrationEnabled,
   }),
 );
 app.get("/api/demo-users", (_, res) =>
@@ -195,6 +201,8 @@ app.post("/api/auth/register", (req, res, next) =>
     async () => {
       if (!accountMode)
         fail("Account registration is disabled in demo mode.", 403);
+      if (!deployment.registrationEnabled)
+        fail("This pilot is invitation-only. Contact your administrator.", 403);
       const nextDb = structuredClone(db);
       const user = await register(nextDb, req.body);
       const result = newSession(nextDb, user);
@@ -243,6 +251,7 @@ app.use("/api", (req, res, next) => {
 app.get("/api/state", (req, res) =>
   res.json({
     user: publicUser(req.user),
+    pilot: deployment.pilot,
     mode: accountMode ? "accounts" : "local-demo",
     ...visible(db, req.user),
   }),

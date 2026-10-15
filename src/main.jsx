@@ -279,6 +279,8 @@ function App() {
           <Court />
         </div>
         <AccountLogin
+          pilot={config.pilot}
+          registrationEnabled={config.registrationEnabled !== false}
           onLogin={async (r) => {
             sessionStorage.setItem("tbe-token", r.token);
             const d = await api("state");
@@ -582,6 +584,13 @@ function App() {
           </div>
         </header>
         <main>
+          {data.pilot && (
+            <p className="card feature-pad" role="note">
+              <strong>Company evaluation pilot</strong> · Use fictional player
+              and family details. Payments and external delivery are disabled.
+              Changes are saved for other invited testers.
+            </p>
+          )}
           <div className="page-heading">
             <div>
               <p className="eyebrow">

@@ -1,0 +1,41 @@
+# Creates a PAID service and persistent disk only after confirmation in Render.
+# Do not use a free/ephemeral service for this file-backed pilot.
+services:
+  - type: web
+    name: basketball-experience-pilot
+    runtime: node
+    plan: 0.5c-512mb
+    numInstances: 1
+    buildCommand: npm install -g pnpm@11.19.0 && pnpm install --frozen-lockfile --prod=false && pnpm build
+    startCommand: node server/index.js --production
+    healthCheckPath: /api/ready
+    autoDeployTrigger: "off"
+    disk:
+      name: pilot-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: 24.19.0
+      - key: NODE_ENV
+        value: production
+      - key: APP_MODE
+        value: accounts
+      - key: APP_STAGE
+        value: pilot
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATA_FILE
+        value: /var/data/accounts.json
+      - key: ALLOW_PUBLIC_REGISTRATION
+        value: "false"
+      - key: ENABLE_EXTERNAL_DELIVERY
+        value: "false"
+      - key: ENABLE_CLOUD_UPLOADS
+        value: "false"
+      - key: BOOTSTRAP_ADMIN_NAME
+        sync: false
+      - key: BOOTSTRAP_ADMIN_EMAIL
+        sync: false
+      - key: BOOTSTRAP_ADMIN_PASSWORD
+        sync: false
