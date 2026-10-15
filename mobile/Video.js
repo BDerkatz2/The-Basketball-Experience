@@ -42,17 +42,18 @@ export function MobileVideo({ data, base, token, act, busy }) {
   const [stage, setStage] = useState(""),
     [ready, setReady] = useState(false),
     [key, setKey] = useState("");
-  const draftDir = new Directory(
+  const web = Platform.OS === "web";
+  const draftDir = web ? null : new Directory(
     Paths.document,
     "video-drafts",
     encodeURIComponent(base + "|" + data.user.id),
   );
-  const draftFile = new File(draftDir, "draft.json");
+  const draftFile = web ? null : new File(draftDir, "draft.json");
   useEffect(() => {
     let active = true;
     (async () => {
       try {
-        if (draftFile.exists) {
+        if (draftFile?.exists) {
           const draft = JSON.parse(await draftFile.text());
           if (active && draft.asset && new File(draft.asset.uri).exists) {
             setAsset(draft.asset);
@@ -81,7 +82,7 @@ export function MobileVideo({ data, base, token, act, busy }) {
     };
   }, []);
   useEffect(() => {
-    if (!restored.current || !asset || !key) return;
+    if (web || !restored.current || !asset || !key) return;
     try {
       draftDir.create({ intermediates: true, idempotent: true });
       draftFile.write(JSON.stringify({ asset, name, teamId, uploaded, key }));
@@ -93,9 +94,9 @@ export function MobileVideo({ data, base, token, act, busy }) {
   }, [asset, name, teamId, uploaded, key]);
   function discard() {
     try {
-      if (draftFile.exists) draftFile.delete();
+      if (draftFile?.exists) draftFile.delete();
       if (
-        asset &&
+        !web && asset &&
         asset.uri.startsWith(draftDir.uri) &&
         new File(asset.uri).exists
       )
@@ -153,11 +154,19 @@ export function MobileVideo({ data, base, token, act, busy }) {
       });
       if (!result.canceled) {
         const picked = result.assets[0];
-        if (new File(picked.uri).size > 100 * 1024 * 1024)
+        const pickedFile = web ? picked.file || await (await fetch(picked.uri)).blob() : new File(picked.uri);
+        if (pickedFile.size > 100 * 1024 * 1024)
           throw Error("Choose a clip smaller than 100 MB.");
-        draftDir.create({ intermediates: true, idempotent: true });
         const nextKey =
           Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
+        if (web) {
+          setKey(nextKey);
+          setAsset({ uri: picked.uri, file: pickedFile, size: pickedFile.size, fileName: picked.fileName || pickedFile.name || "recording.mp4" });
+          setUploaded(null);
+          setStage("Clip selected. Keep this page open until the upload finishes; browser drafts are not saved after closing it.");
+          return;
+        }
+        draftDir.create({ intermediates: true, idempotent: true });
         const local = new File(draftDir, nextKey + ".mp4");
         new File(picked.uri).copy(local);
         setKey(nextKey);
@@ -182,7 +191,7 @@ export function MobileVideo({ data, base, token, act, busy }) {
         const timeout = setTimeout(() => controller.current?.abort(), 120000);
         let response;
         try {
-          response = await nativeFetch(
+          response = await (web ? fetch : nativeFetch)(
             base +
               "/api/files?" +
               new URLSearchParams({
@@ -197,7 +206,7 @@ export function MobileVideo({ data, base, token, act, busy }) {
                 "Content-Type": "application/octet-stream",
                 "X-Upload-Key": key,
               },
-              body: new File(asset.uri),
+              body: web ? asset.file : new File(asset.uri),
               signal: controller.current.signal,
             },
           );
@@ -260,7 +269,7 @@ export function MobileVideo({ data, base, token, act, busy }) {
             disabled={working || busy || !!asset || !ready}
           />
           <Button
-            title="Choose video from phone"
+            title={web ? "Choose video" : "Choose video from phone"}
             onPress={() => choose(false)}
             disabled={working || busy || !!asset || !ready}
           />
@@ -281,7 +290,7 @@ export function MobileVideo({ data, base, token, act, busy }) {
           )}
           {asset && (
             <Text>
-              Clip selected · {(new File(asset.uri).size / 1048576).toFixed(1)}{" "}
+              Clip selected · {((web ? asset.size : new File(asset.uri).size) / 1048576).toFixed(1)}{" "}
               MB
             </Text>
           )}
@@ -321,7 +330,35 @@ export function MobileVideo({ data, base, token, act, busy }) {
   );
 }
 function Review({ video, base, token, coach, act, busy }) {
-  const source = video.fileId
+  const [playback, setPlayback] = useState(null);
+  const [loadError, setLoadError] = useState("");
+  useEffect(() => {
+    if (Platform.OS !== "web" || !video.fileId) return;
+    const abort = new AbortController();
+    let objectUrl;
+    setPlayback(null);
+    setLoadError("");
+    (async () => {
+      try {
+        const response = await fetch(base + "/api/media/" + video.fileId + "/playback", {
+          headers: { Authorization: "Bearer " + token }, signal: abort.signal,
+        });
+        if (!response.ok) throw Error("The clip could not be loaded. Check your connection and try opening it again.");
+        const blob = await response.blob();
+        if (!abort.signal.aborted) {
+          objectUrl = URL.createObjectURL(blob);
+          setPlayback(objectUrl);
+        }
+      } catch (e) { if (!abort.signal.aborted) setLoadError(e.message); }
+    })();
+    return () => { abort.abort(); if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [base, token, video.fileId]);
+  if (Platform.OS === "web" && video.fileId && !playback)
+    return <Text accessibilityRole={loadError ? "alert" : undefined}>{loadError || "Loading clip…"}</Text>;
+  return <ReviewPlayer video={video} base={base} token={token} coach={coach} act={act} busy={busy} playback={playback} />;
+}
+function ReviewPlayer({ video, base, token, coach, act, busy, playback }) {
+  const source = playback ? { uri: playback } : video.fileId
     ? {
         uri: base + "/api/media/" + video.fileId + "/playback",
         headers: { Authorization: "Bearer " + token },

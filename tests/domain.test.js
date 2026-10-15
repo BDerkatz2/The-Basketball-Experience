@@ -204,3 +204,31 @@ test("coaches can assign only to their roster and cannot change scores", () => {
     /Staff access/,
   );
 });
+
+test("self check-in is scoped to a family or player and never staff", () => {
+  const {db,parent,player,coach,admin}=setup();
+  mutate(db,parent,"self-checkin",{eventId:"s1",playerId:"p1",present:true});
+  assert.equal(visible(db,coach).attendance.find(a=>a.eventId==="s1"&&a.playerId==="p1").present,true);
+  mutate(db,player,"self-checkin",{eventId:"s1",playerId:"p1",present:false});
+  assert.equal(db.attendance.find(a=>a.eventId==="s1"&&a.playerId==="p1").present,false);
+  for(const user of [coach,admin,{...admin,role:"staff"}]) assert.throws(()=>mutate(db,user,"self-checkin",{eventId:"s1",playerId:"p1",present:true}),/access required/);
+  assert.throws(()=>mutate(db,parent,"self-checkin",{eventId:"s1",playerId:"p3",present:true}),/denied/);
+  assert.throws(()=>mutate(db,player,"self-checkin",{eventId:"s2",playerId:"p2",present:true}),/denied/);
+  assert.throws(()=>mutate(db,parent,"self-checkin",{eventId:"s1",playerId:"p1",present:"yes"}),/Invalid/);
+  db.events.find(e=>e.id==="s1").status="Cancelled";
+  assert.throws(()=>mutate(db,parent,"self-checkin",{eventId:"s1",playerId:"p1",present:true}),/cancelled/);
+});
+test("session plans enforce team scope and preserve drill snapshots", () => {
+  const {db,coach,parent,admin}=setup();
+  db.trainingPlans=[{id:"plan",ownerId:coach.id,name:"Practice",notes:"Warm up first",exercises:[{id:"d1",name:"Shooting",minutes:15}]}];
+  const body={eventId:"s1",planId:"plan",notes:"Bring a ball"};
+  mutate(db,coach,"session-plan",body);
+  db.trainingPlans[0].exercises[0].name="Changed";
+  assert.equal(db.events.find(e=>e.id==="s1").sessionPlan.exercises[0].name,"Shooting");
+  assert.throws(()=>mutate(db,parent,"session-plan",body),/denied/);
+  assert.throws(()=>mutate(db,{...coach,teamIds:[]},"session-plan",body),/denied/);
+  mutate(db,admin,"session-plan",{...body,planId:"",notes:"Updated"});
+  assert.equal(db.events.find(e=>e.id==="s1").sessionPlan.notes,"Updated");
+  db.trainingPlans[0].archived=true;
+  assert.throws(()=>mutate(db,coach,"session-plan",body),/unavailable/);
+});

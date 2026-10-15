@@ -998,7 +998,14 @@ app.use("/api", (_, res) =>
   res.status(404).json({ error: "Endpoint not found." }),
 );
 if (process.argv.includes("--production")) {
+  app.get("/", (req, res, next) => {
+    res.vary("User-Agent");
+    if (req.query.desktop !== "1" && /iPhone|iPod|Android.*Mobile/i.test(req.get("User-Agent") || ""))
+      return res.redirect(302, "/mobile/");
+    next();
+  });
   app.use(express.static(resolve(root, "dist")));
+  app.get("/mobile/{*path}", (_, res) => res.sendFile(resolve(root, "dist/mobile/index.html")));
   app.get("/{*path}", (_, res) =>
     res.sendFile(resolve(root, "dist/index.html")),
   );

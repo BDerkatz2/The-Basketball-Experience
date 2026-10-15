@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, Pressable } from "react-native";
+import { View, Text, TextInput, Pressable, Image } from "react-native";
 const box = {
     padding: 14,
     marginVertical: 8,
@@ -44,21 +44,33 @@ function Input({ label, value, set, numeric = false }) {
     </View>
   );
 }
-function Pick({ label, rows, value, set }) {
+function Pick({ label, rows, value, set, compact = false }) {
   return (
     <View>
       <Text>{label}</Text>
-      {rows.map((r) => (
-        <Btn
-          key={r.id}
-          title={(r.id === value ? "✓ " : "") + r.name}
-          onPress={() => set(r.id)}
-        />
-      ))}
+      <View
+        style={
+          compact
+            ? { flexDirection: "row", flexWrap: "wrap", gap: 8 }
+            : undefined
+        }
+      >
+        {rows.map((r) => (
+          <Btn
+            key={r.id}
+            title={(r.id === value ? "✓ " : "") + r.name}
+            onPress={() => set(r.id)}
+          />
+        ))}
+      </View>
     </View>
   );
 }
-export function NativeCart({ data, act, busy }) {
+export function NativeCart({ data, act, busy, onScreenChange }) {
+  const [screen, setScreen] = useState("catalog");
+  useEffect(() => {
+    onScreenChange?.();
+  }, [screen]);
   const [productId, setProduct] = useState(
       data.products.find((p) => !p.archivedAt)?.id || "",
     ),
@@ -75,135 +87,260 @@ export function NativeCart({ data, act, busy }) {
     c = data.carts?.find(
       (c) => c.status === "Reserved" && c.ownerId === data.user.id,
     );
-  if (!["parent", "staff", "admin"].includes(data.user.role)) return null;
+  const canOrder = ["parent", "staff", "admin"].includes(data.user.role);
+  const picture = (p) =>
+    /hoodie/i.test(p.name)
+      ? require("./assets/store-hoodie.png")
+      : /jersey/i.test(p.name)
+        ? require("./assets/store-jersey.png")
+        : require("./assets/store-tee.png");
+  if (screen === "catalog")
+    return (
+      <View>
+        <Text style={{ fontSize: 16, color: "#576d7c", marginBottom: 20 }}>
+          Made for the court. Worn everywhere.
+        </Text>
+        {canOrder && (
+          <Btn
+            title={`Shopping bag (${c ? c.lines.length : lines.length})`}
+            onPress={() => setScreen("bag")}
+          />
+        )}
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+            gap: 12,
+          }}
+        >
+          {data.products
+            .filter((p) => !p.archivedAt)
+            .map((item) => (
+              <Pressable
+                key={item.id}
+                accessibilityRole="button"
+                accessibilityLabel={`View ${item.name}`}
+                style={{ width: "48%", marginBottom: 18 }}
+                onPress={() => {
+                  setProduct(item.id);
+                  setVariant(item.variants?.[0]?.id || "default");
+                  setSize("");
+                  setQuantity("1");
+                  setScreen("detail");
+                }}
+              >
+                <Image
+                  source={picture(item)}
+                  style={{ width: "100%", aspectRatio: 0.85, borderRadius: 16 }}
+                  resizeMode="contain"
+                />
+                <Text
+                  style={{ fontSize: 16, fontWeight: "700", marginTop: 12 }}
+                >
+                  {item.name}
+                </Text>
+                <Text style={{ marginTop: 6 }}>
+                  CA${Number(item.price).toFixed(2)}
+                </Text>
+              </Pressable>
+            ))}
+        </View>
+      </View>
+    );
+  if (screen === "detail" && !p)
+    return <Btn title="Back to store" onPress={() => setScreen("catalog")} />;
+
   return (
     <View style={box}>
-      <Text style={{ fontSize: 24 }}>Team-store cart</Text>
-      <Text>
-        Reserve inventory for 15 minutes. Confirm to create one family invoice;
-        pay through Family invoices. Credits apply at confirmation.
-      </Text>
-      <Pick
-        label="Player"
-        rows={data.players}
-        value={playerId}
-        set={setPlayer}
-      />
-      <Text>
-        {data.creditBalances?.find((c) => c.playerId === playerId)?.remaining ||
-          0}{" "}
-        credits available this year
-      </Text>
-      <Pick
-        label="Product"
-        rows={data.products.filter((p) => !p.archivedAt)}
-        value={productId}
-        set={(id) => {
-          setProduct(id);
-          setVariant("default");
-          setSize(data.products.find((p) => p.id === id).sizes[0]);
-        }}
-      />
-      <Pick
-        label="Color"
-        rows={(p?.variants || []).map((v) => ({ id: v.id, name: v.color }))}
-        value={v?.id}
-        set={setVariant}
-      />
-      <Pick
-        label="Size"
-        rows={(p?.sizes || []).map((s) => ({
-          id: s,
-          name: `${s}: ${v?.available[s] || 0} available`,
-        }))}
-        value={size}
-        set={setSize}
-      />
-      <Input label="Quantity" numeric value={quantity} set={setQuantity} />
-      <Btn
-        title={useCredits ? "Use credits: yes" : "Use credits: no"}
-        onPress={() => setCredits(!useCredits)}
-      />
-      <Btn
-        title="Add item to cart"
-        disabled={busy || !!c || !p || !playerId || lines.length >= 20}
-        onPress={() =>
-          setLines([
-            ...lines,
-            {
-              productId,
-              variantId: v.id,
-              playerId,
-              size,
-              quantity: Number(quantity),
-              useCredits,
-            },
-          ])
-        }
-      />
-      {lines.map((l, i) => (
-        <View key={i}>
-          <Text>
-            {data.products.find((p) => p.id === l.productId)?.name} · {l.size} ×{" "}
-            {l.quantity}
-          </Text>
-          <Btn
-            title={`Remove item ${i + 1}`}
-            disabled={!!c}
-            onPress={() => setLines(lines.filter((_, j) => i !== j))}
-          />
-        </View>
-      ))}
-      {c ? (
+      <Btn title="Back to store" onPress={() => setScreen("catalog")} />
+      {screen === "detail" && (
         <>
-          <Text>
-            Reserved until {new Date(c.expiresAt).toLocaleTimeString()}
+          <Image
+            source={picture(p)}
+            style={{ width: "100%", height: 280 }}
+            resizeMode="contain"
+          />
+          <Text style={{ fontSize: 26, fontWeight: "700", marginVertical: 12 }}>
+            {p.name}
           </Text>
-          {c.lines.map((l, i) => (
-            <Text key={i}>
-              {l.name} · {l.color} · {l.size} × {l.quantity}
-            </Text>
-          ))}
-          <Btn
-            title={`Confirm order · estimated $${cartEstimate(data, c)} CAD`}
-            disabled={busy}
-            onPress={async () => {
-              if (await act("cart-checkout", { id: c.id })) setLines([]);
-            }}
-          />
-          <Btn
-            title="Release reservation"
-            disabled={busy}
-            onPress={() => act("cart-release", { id: c.id })}
-          />
+          <Text style={{ fontSize: 20 }}>CA${Number(p.price).toFixed(2)}</Text>
+          <Text>
+            {p.description || "Team essentials for training and everyday wear."}
+          </Text>
         </>
-      ) : (
-        <Btn
-          title="Reserve cart for 15 minutes"
-          disabled={busy || !lines.length}
-          onPress={() => act("cart-reserve", { lines })}
-        />
       )}
-      <Text style={{ fontSize: 22 }}>Orders</Text>
-      {data.orders.map((o) => (
-        <View key={o.id} style={box}>
-          <Text>
-            {data.players.find((p) => p.id === o.playerId)?.name} ·{" "}
-            {data.products.find((p) => p.id === o.productId)?.name} · {o.color}{" "}
-            · {o.size} × {o.quantity}
-          </Text>
-          <Text>
-            ${o.total} CAD · {o.paymentStatus} · {o.status}
-          </Text>
-          {staff(data) && !["Delivered", "Cancelled"].includes(o.status) && (
-            <Btn
-              title="Mark delivered"
-              disabled={busy}
-              onPress={() => act("fulfill", { id: o.id })}
-            />
+      {!canOrder && (
+        <Text style={{ marginVertical: 20 }}>
+          Ask your parent or guardian to order this item.
+        </Text>
+      )}
+      {canOrder && (
+        <>
+          {screen === "detail" && (
+            <>
+              <Text>
+                Reserve inventory for 15 minutes. Confirm to create one family
+                invoice; pay through Family invoices. Credits apply at
+                confirmation.
+              </Text>
+              <Pick
+                label="Player"
+                rows={data.players}
+                value={playerId}
+                set={setPlayer}
+              />
+              <Text>
+                {data.creditBalances?.find((c) => c.playerId === playerId)
+                  ?.remaining || 0}{" "}
+                credits available this year
+              </Text>
+              <Pick
+                label="Color"
+                rows={(p?.variants || []).map((v) => ({
+                  id: v.id,
+                  name: v.color,
+                }))}
+                value={v?.id}
+                set={setVariant}
+              />
+              <Pick
+                label="Size"
+                compact
+                rows={(p?.sizes || []).map((s) => ({
+                  id: s,
+                  name: `${s} (${v?.available[s] || 0})`,
+                }))}
+                value={size}
+                set={setSize}
+              />
+              <Input
+                label="Quantity"
+                numeric
+                value={quantity}
+                set={setQuantity}
+              />
+              <Btn
+                title={useCredits ? "Use credits: yes" : "Use credits: no"}
+                onPress={() => setCredits(!useCredits)}
+              />
+              <Btn
+                title="Add item to cart"
+                disabled={
+                  busy ||
+                  !!c ||
+                  !p ||
+                  !playerId ||
+                  !size ||
+                  !Number.isInteger(Number(quantity)) ||
+                  Number(quantity) < 1 ||
+                  Number(quantity) >
+                    (v?.available?.[size] || 0) -
+                      lines
+                        .filter(
+                          (l) =>
+                            l.productId === p.id &&
+                            l.variantId === v?.id &&
+                            l.size === size,
+                        )
+                        .reduce((n, l) => n + l.quantity, 0) ||
+                  lines.length >= 20
+                }
+                onPress={() => {
+                  setLines([
+                    ...lines,
+                    {
+                      productId,
+                      variantId: v.id,
+                      playerId,
+                      size,
+                      quantity: Number(quantity),
+                      useCredits,
+                    },
+                  ]);
+                  setScreen("bag");
+                }}
+              />
+              {!!c && (
+                <Btn
+                  title="Open reserved bag"
+                  onPress={() => setScreen("bag")}
+                />
+              )}
+            </>
           )}
-        </View>
-      ))}
+          {screen === "bag" && (
+            <>
+              <Text style={{ fontSize: 24, fontWeight: "700" }}>Your bag</Text>
+              {lines.map((l, i) => (
+                <View key={i}>
+                  <Text>
+                    {data.products.find((p) => p.id === l.productId)?.name} ·{" "}
+                    {l.size} × {l.quantity}
+                  </Text>
+                  <Btn
+                    title={`Remove item ${i + 1}`}
+                    disabled={!!c}
+                    onPress={() => setLines(lines.filter((_, j) => i !== j))}
+                  />
+                </View>
+              ))}
+              {c ? (
+                <>
+                  <Text>
+                    Reserved until {new Date(c.expiresAt).toLocaleTimeString()}
+                  </Text>
+                  {c.lines.map((l, i) => (
+                    <Text key={i}>
+                      {l.name} · {l.color} · {l.size} × {l.quantity}
+                    </Text>
+                  ))}
+                  <Btn
+                    title={`Confirm order · estimated $${cartEstimate(data, c)} CAD`}
+                    disabled={busy}
+                    onPress={async () => {
+                      if (await act("cart-checkout", { id: c.id }))
+                        setLines([]);
+                    }}
+                  />
+                  <Btn
+                    title="Release reservation"
+                    disabled={busy}
+                    onPress={() => act("cart-release", { id: c.id })}
+                  />
+                </>
+              ) : (
+                <Btn
+                  title="Reserve cart for 15 minutes"
+                  disabled={busy || !lines.length}
+                  onPress={() => act("cart-reserve", { lines })}
+                />
+              )}
+              <Text style={{ fontSize: 22 }}>Orders</Text>
+              {data.orders.map((o) => (
+                <View key={o.id} style={box}>
+                  <Text>
+                    {data.players.find((p) => p.id === o.playerId)?.name} ·{" "}
+                    {data.products.find((p) => p.id === o.productId)?.name} ·{" "}
+                    {o.color} · {o.size} × {o.quantity}
+                  </Text>
+                  <Text>
+                    ${o.total} CAD · {o.paymentStatus} · {o.status}
+                  </Text>
+                  {staff(data) &&
+                    !["Delivered", "Cancelled"].includes(o.status) && (
+                      <Btn
+                        title="Mark delivered"
+                        disabled={busy}
+                        onPress={() => act("fulfill", { id: o.id })}
+                      />
+                    )}
+                </View>
+              ))}
+            </>
+          )}
+        </>
+      )}
     </View>
   );
 }

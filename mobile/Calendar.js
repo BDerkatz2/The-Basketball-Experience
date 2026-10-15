@@ -1,3 +1,4 @@
+import { SessionPage } from "./TeamPages";
 import { headingFont } from "./theme";
 import React, { useState } from "react";
 import {
@@ -31,8 +32,8 @@ function Button({ title, onPress, disabled, selected }) {
     </Pressable>
   );
 }
-export function MobileCalendar({ data, act, busy }) {
-  const [view, setView] = useState("month"),
+export function MobileCalendar({ data, act, busy, onScreenChange }) {
+  const [view, setView] = useState("agenda"),
     [anchor, setAnchor] = useState(() => new Date()),
     [selected, setSelected] = useState(() => dayKey(new Date())),
     [jump, setJump] = useState(() => dayKey(new Date())),
@@ -40,6 +41,8 @@ export function MobileCalendar({ data, act, busy }) {
     [query, setQuery] = useState(""),
     [cancelled, setCancelled] = useState(false),
     [error, setError] = useState("");
+  const [eventId, setEventId] = useState(null);
+  const event = data.events.find((e) => e.id === eventId);
   const filtered = filterSessions(data.events, {
       player,
       query,
@@ -59,6 +62,7 @@ export function MobileCalendar({ data, act, busy }) {
     view === "month"
       ? anchor.toLocaleDateString(undefined, { month: "long", year: "numeric" })
       : days[0].toLocaleDateString() + " – " + days[6].toLocaleDateString();
+  if (event) return <SessionPage event={event} data={data} act={act} busy={busy} back={() => { setEventId(null); onScreenChange?.(); }} />;
   return (
     <View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -206,81 +210,33 @@ export function MobileCalendar({ data, act, busy }) {
         </Text>
       )}
       {events.map((e) => (
-        <View key={e.id} style={s.card}>
+        <Pressable
+          key={e.id}
+          accessibilityRole="button"
+          accessibilityLabel={`${e.title}, ${new Date(e.start).toLocaleString()}, ${e.location}, ${e.minutes} minutes${e.status === "Cancelled" ? ", cancelled" : ""}`}
+          accessibilityHint="Opens session details"
+          onPress={() => { setEventId(e.id); onScreenChange?.(); }}
+          style={({ pressed }) => [s.card, pressed && { backgroundColor: "#def2ff" }]}
+        >
           <Text style={s.tag}>
             {e.status === "Cancelled" ? "CANCELLED" : e.kind} ·{" "}
             {new Date(e.start).toLocaleString()}
           </Text>
-          <Text style={s.title}>{e.title}</Text>
+          <View style={s.sessionHeading}>
+            <Text style={[s.title, { flex: 1 }]}>{e.title}</Text>
+            <Text accessible={false} style={s.chevron}>›</Text>
+          </View>
           <Text>
             {e.location} · {e.minutes} minutes
           </Text>
-          <Button
-            title="Open location in maps"
-            onPress={async () => {
-              try {
-                await Linking.openURL(
-                  "https://www.google.com/maps/search/?api=1&query=" +
-                    encodeURIComponent(e.address || e.location),
-                );
-              } catch {
-                setError("Could not open maps.");
-              }
-            }}
-          />
-          <Text style={s.note}>
-            Confirm the venue address before travelling.
-          </Text>
-          {e.playerIds
-            .filter((id) => data.players.some((p) => p.id === id))
-            .map((id) => {
-              const p = data.players.find((p) => p.id === id),
-                rsvp = data.rsvps.find(
-                  (r) => r.eventId === e.id && r.playerId === id,
-                ),
-                present = !!data.attendance.find(
-                  (a) => a.eventId === e.id && a.playerId === id,
-                )?.present;
-              return (
-                <View key={id}>
-                  <Text style={s.person}>
-                    {p.name} · {rsvp?.status || "Unsure"}
-                  </Text>
-                  <View style={s.row}>
-                    {["Going", "Unavailable", "Unsure"].map((status) => (
-                      <Button
-                        key={status}
-                        title={status}
-                        selected={(rsvp?.status || "Unsure") === status}
-                        disabled={busy || e.status === "Cancelled"}
-                        onPress={() =>
-                          act("rsvp", { eventId: e.id, playerId: id, status })
-                        }
-                      />
-                    ))}
-                  </View>
-                  {staff && (
-                    <Button
-                      title={present ? "Undo check-in" : "Check in"}
-                      disabled={busy || e.status === "Cancelled"}
-                      onPress={() =>
-                        act("checkin", {
-                          eventId: e.id,
-                          playerId: id,
-                          present: !present,
-                        })
-                      }
-                    />
-                  )}
-                </View>
-              );
-            })}
-        </View>
+        </Pressable>
       ))}
     </View>
   );
 }
 const s = StyleSheet.create({
+  sessionHeading: { flexDirection: "row", alignItems: "center", gap: 12 },
+  chevron: { fontSize: 26, color: "#0079bc" },
   row: {
     flexDirection: "row",
     alignItems: "center",

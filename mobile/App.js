@@ -1,3 +1,4 @@
+import { MobileHome } from "./MobileHome";
 import { Administration } from "./Administration";
 import {
   NativeCart,
@@ -26,7 +27,7 @@ import { PhonePush } from "./Push";
 import { MobileChat, MobileRedeem } from "./Communication";
 import { MobileMemberships, MobilePreferences } from "./FamilySettings";
 import { canManageMemberships } from "./membership-utils.mjs";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Image,
@@ -51,7 +52,7 @@ import {
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 const BASE =
   process.env.EXPO_PUBLIC_API_URL ||
-  (Platform.OS === "android"
+  (Platform.OS === "web" ? window.location.origin : Platform.OS === "android"
     ? "http://10.0.2.2:4173"
     : "http://127.0.0.1:4173");
 const date = (s) =>
@@ -73,6 +74,11 @@ export default function App() {
     [selected, setSelected] = useState(null),
     [attempts, setAttempts] = useState("0"),
     [made, setMade] = useState("0");
+  const scroll = useRef(null);
+  const [trainingView, setTrainingView] = useState("Workouts");
+  useEffect(() => {
+    scroll.current?.scrollTo({ y: 0, animated: false });
+  }, [page]);
   const [mode, setMode] = useState("local-demo");
   const [accountLink, setAccountLink] = useState(null);
   useEffect(() => {
@@ -217,7 +223,7 @@ export default function App() {
           <Image
             source={require("./assets/logo.png")}
             accessibilityLabel="The Basketball Experience"
-            style={{ width: 205, height: 78 }}
+            style={{ width: 150, height: 45 }}
             resizeMode="contain"
           />
           <Text style={s.demo}>
@@ -225,6 +231,8 @@ export default function App() {
           </Text>
         </View>
         <ScrollView
+          ref={scroll}
+          keyboardShouldPersistTaps="handled"
           contentContainerStyle={s.content}
           refreshControl={
             data ? (
@@ -300,67 +308,23 @@ export default function App() {
               <Text style={s.title}>
                 {page === "Home"
                   ? `Hi, ${data.user.name.split(" ")[0]}.`
-                  : page}
+                  : page === "Chat"
+                    ? "Messages"
+                    : page}
               </Text>
-              {page === "Home" && (
-                <>
-                  <ImageBackground
-                    source={require("./assets/training.jpg")}
-                    style={s.hero}
-                    imageStyle={{ opacity: 0.28 }}
-                  >
-                    <Text style={s.eyebrow}>SASKATOON BASKETBALL</Text>
-                    <Text style={s.heroTitle}>EVOLVE YOUR{"\n"}GAME.</Text>
-                    <Text style={s.heroText}>
-                      A little progress, every day.
-                    </Text>
-                  </ImageBackground>
-                  <Text style={s.subtitle}>Your players</Text>
-                  {data.players.map((p) => (
-                    <View key={p.id} style={s.card}>
-                      <Text style={s.cardTitle}>
-                        {p.name} · #{p.number}
-                      </Text>
-                      <Text style={s.muted}>{team(p.teamId)}</Text>
-                      <Text style={s.tag}>
-                        {[
-                          ...new Set(
-                            data.enrollments
-                              .filter((e) => e.playerId === p.id)
-                              .map(
-                                (e) =>
-                                  data.programs.find(
-                                    (a) => a.id === e.programId,
-                                  )?.type,
-                              ),
-                          ),
-                        ].join(" · ") || "Explore your first program"}
-                      </Text>
-                    </View>
-                  ))}
-                  <Button
-                    title="View the family calendar →"
-                    onPress={() => setPage("Schedule")}
-                  />
-                  <Button
-                    title="Switch demo account"
-                    outline
-                    onPress={async () => {
-                      try {
-                        await api("logout", {});
-                      } finally {
-                        setToken("");
-                        setData(null);
-                      }
-                    }}
-                  />
-                </>
-              )}
+              {page === "Home" && <MobileHome act={act} busy={busy} data={data} navigate={setPage} onScreenChange={() => scroll.current?.scrollTo({ y: 0, animated: false })} />}
               {page === "Programs" && (
                 <Programs data={data} act={act} busy={busy} />
               )}
               {page === "Store" && (
-                <NativeCart data={data} act={act} busy={busy} />
+                <NativeCart
+                  data={data}
+                  act={act}
+                  busy={busy}
+                  onScreenChange={() =>
+                    scroll.current?.scrollTo({ y: 0, animated: false })
+                  }
+                />
               )}
               {page === "Updates" && (
                 <>
@@ -404,9 +368,33 @@ export default function App() {
               )}
               {page === "Training" && (
                 <>
-                  <NativePlaybook data={data} act={act} busy={busy} />
-                  <MobileProgress data={data} act={act} busy={busy} />
-                  <MobilePlanControls data={data} act={act} busy={busy} />
+                  <View style={s.row}>
+                    {[
+                      "Workouts",
+                      "Progress",
+                      "Playbook",
+                      ...(staff ? ["Plans"] : []),
+                    ].map((t) => (
+                      <Pressable
+                        key={t}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: trainingView === t }}
+                        onPress={() => setTrainingView(t)}
+                        style={[s.button, trainingView !== t && s.outline]}
+                      >
+                        <Text>{t}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  {trainingView === "Playbook" && (
+                    <NativePlaybook data={data} act={act} busy={busy} />
+                  )}
+                  {trainingView === "Progress" && (
+                    <MobileProgress data={data} act={act} busy={busy} />
+                  )}
+                  {trainingView === "Plans" && staff && (
+                    <MobilePlanControls data={data} act={act} busy={busy} />
+                  )}
                 </>
               )}
               {page === "Video" && (
@@ -414,16 +402,12 @@ export default function App() {
               )}
               {page === "Family" && <MobilePayments data={data} api={api} />}
               {page === "More" && (
-                <View style={s.row}>
+                <View>
                   {[
-                    "Home",
-                    "Schedule",
                     "Programs",
                     "Store",
-                    "Training",
                     "Video",
                     "League",
-                    "Chat",
                     "Updates",
                     ...(data.user.role === "parent" ? ["Family"] : []),
                     ...(["coach", "staff", "admin"].includes(data.user.role)
@@ -446,6 +430,21 @@ export default function App() {
                       }}
                     />
                   ))}
+                  <Button
+                    title={
+                      mode === "accounts" ? "Sign out" : "Switch demo account"
+                    }
+                    outline
+                    onPress={async () => {
+                      try {
+                        await api("logout", {});
+                      } finally {
+                        setToken("");
+                        setData(null);
+                        setPage("Home");
+                      }
+                    }}
+                  />
                 </View>
               )}
               {page === "League" && (
@@ -456,7 +455,7 @@ export default function App() {
                 </>
               )}
               {page === "Schedule" && (
-                <MobileCalendar data={data} act={act} busy={busy} />
+                <MobileCalendar data={data} act={act} busy={busy} onScreenChange={() => scroll.current?.scrollTo({ y: 0, animated: false })} />
               )}
               {page === "Updates" && <PhonePush api={api} mode={mode} />}
               {page === "Video" && (
@@ -469,6 +468,7 @@ export default function App() {
                 />
               )}
               {page === "Training" &&
+                trainingView === "Workouts" &&
                 data.workouts.map((w) => {
                   const d =
                     w.drillSnapshot ||
@@ -492,7 +492,9 @@ export default function App() {
                           {d.sets} sets · {d.reps} reps · {d.rest}s rest
                         </Text>
                       )}
-                      <Text style={s.muted}>{d.instructions}</Text>
+                      {selected === w.id && (
+                        <Text style={s.muted}>{d.instructions}</Text>
+                      )}
                       <Text style={s.tag}>
                         {d.minutes} min · Due {date(w.due)}
                       </Text>
@@ -502,7 +504,7 @@ export default function App() {
                         </Text>
                       ) : w.completed ? (
                         <Text style={s.person}>✓ Completed</Text>
-                      ) : selected === w.id ? (
+                      ) : staff ? (<Text style={s.muted}>Awaiting player completion</Text>) : selected === w.id ? (
                         <>
                           <Text style={s.label}>Attempts</Text>
                           <TextInput
@@ -564,6 +566,7 @@ export default function App() {
                   ))}
               {page === "Chat" && (
                 <MobileChat
+                  onScreenChange={() => scroll.current?.scrollTo({ y: 0, animated: false })}
                   data={data}
                   act={act}
                   base={BASE}
@@ -582,21 +585,18 @@ export default function App() {
           {message && data ? <Text style={s.tag}>{message}</Text> : null}
         </ScrollView>
         {data && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ flexGrow: 0 }}
-            contentContainerStyle={s.nav}
-          >
-            {["Home", "Schedule", "Chat", "More"].map((p) => (
+          <View style={s.nav}>
+            {["Home", "Schedule", "Training", "Chat", "More"].map((p) => (
               <Pressable
-                key={p}
+                key={p === "Chat" ? "Messages" : p}
                 accessibilityRole="button"
                 accessibilityState={{ selected: page === p }}
                 accessibilityLabel={
                   p === "More"
                     ? "More screens: programs, family, training and settings"
-                    : p
+                    : p === "Chat"
+                      ? "Messages"
+                      : p
                 }
                 onPress={() => {
                   setPage(p);
@@ -611,11 +611,11 @@ export default function App() {
                     page === p && { color: "#006aab", fontWeight: "800" },
                   ]}
                 >
-                  {p}
+                  {p === "Chat" ? "Messages" : p}
                 </Text>
               </Pressable>
             ))}
-          </ScrollView>
+          </View>
         )}
       </SafeAreaView>
     </SafeAreaProvider>
@@ -684,7 +684,7 @@ const s = StyleSheet.create({
     backgroundColor: "#38b6ff",
     paddingVertical: 13,
     paddingHorizontal: 18,
-    borderRadius: 3,
+    borderRadius: 24,
     marginVertical: 7,
     borderWidth: 1,
     borderColor: "#171d24",
@@ -734,18 +734,18 @@ const s = StyleSheet.create({
     borderTopColor: "#38b6ff",
     flexDirection: "row",
     backgroundColor: "#fff",
-    paddingVertical: 16,
+    paddingVertical: 8,
     borderTopWidth: 1,
     borderColor: "#edf5fa",
   },
   navItem: {
-    minWidth: 80,
+    flex: 1,
     minHeight: 48,
-    paddingHorizontal: 14,
+    paddingHorizontal: 2,
     alignItems: "center",
     justifyContent: "center",
   },
-  navText: { fontSize: 14, color: "#35495b" },
+  navText: { fontSize: 11, color: "#35495b" },
   score: {
     fontSize: 40,
     textAlign: "center",

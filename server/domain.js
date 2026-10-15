@@ -74,6 +74,18 @@ export function visible(db, u) {
   };
 }
 export function mutate(db, u, action, b) {
+  if (action === "session-plan") {
+    const event = db.events.find((e) => e.id === b.eventId);
+    if (!event) fail("Session not found.", 404);
+    if (!isStaff(u) && !(u.role === "coach" && u.teamIds.includes(event.teamId)))
+      fail("Session access denied.", 403);
+    if (event.status === "Cancelled") fail("This session is cancelled.", 409);
+    const notes = b.notes ? text(b.notes, 2000) : "";
+    const plan = b.planId ? (db.trainingPlans || []).find((p) => p.id === b.planId && !p.archived && (isStaff(u) || p.ownerId === u.id)) : null;
+    if (b.planId && !plan) fail("Training plan is unavailable.", 404);
+    event.sessionPlan = { notes, planId: plan?.id || null, name: plan?.name || "Session instructions", exercises: structuredClone(plan?.exercises || []), trainingNotes: plan?.notes || "", updatedAt: new Date().toISOString() };
+    return;
+  }
   if (action === "enroll") {
     if (db.programs.find((p) => p.id === b.programId)?.archivedAt)
       fail("Registration is closed for this program.", 409);
@@ -122,11 +134,20 @@ export function mutate(db, u, action, b) {
       });
     return;
   }
-  if (action === "rsvp" || action === "checkin") {
+  if (action === "rsvp" || action === "checkin" || action === "self-checkin") {
     const p = player(db, u, b.playerId),
       e = db.events.find((x) => x.id === b.eventId);
     if (!e || !e.playerIds.includes(p.id))
       fail("Player is not in this session.");
+    if (action === "self-checkin") {
+      if (!["parent", "player"].includes(u.role)) fail("Player or parent access required.", 403);
+      if (e.status === "Cancelled") fail("This session is cancelled.", 409);
+      if (typeof b.present !== "boolean") fail("Invalid attendance.");
+      let row = db.attendance.find((x) => x.playerId === p.id && x.eventId === e.id);
+      if (!row) { row = { playerId: p.id, eventId: e.id }; db.attendance.push(row); }
+      row.present = b.present;
+      return;
+    }
     if (action === "checkin" && !manages(u, p))
       fail("Coach or staff access required.", 403);
     const value = action === "rsvp" ? b.status : b.present;

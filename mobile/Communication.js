@@ -23,7 +23,7 @@ function Button({ title, onPress, disabled }) {
     </Pressable>
   );
 }
-export function MobileChat({ data, act, base, token, busy }) {
+export function MobileChat({ data, act, base, token, busy, onScreenChange }) {
   const [selected, setSelected] = useState(""),
     [creating, setCreating] = useState(false),
     [group, setGroup] = useState(false),
@@ -33,10 +33,23 @@ export function MobileChat({ data, act, base, token, busy }) {
     [files, setFiles] = useState([]),
     [working, setWorking] = useState(false),
     [error, setError] = useState("");
+  const [details, setDetails] = useState(false),
+    [actions, setActions] = useState(""),
+    [search, setSearch] = useState("");
   const current =
-      data.conversations.find((c) => c.id === selected) ||
-      data.conversations[0],
+      data.conversations.find((c) => c.id === selected),
     disabled = busy || working;
+  const title = (c) => c.kind === "direct"
+    ? c.members.filter((m) => m.id !== data.user.id).map((m) => m.name).join(", ")
+    : c.name;
+  function openConversation(c) {
+    setSelected(c.id);
+    setDraft("");
+    setFiles([]);
+    setDetails(false);
+    setActions("");
+    onScreenChange?.();
+  }
   async function run(fn) {
     setWorking(true);
     setError("");
@@ -117,11 +130,11 @@ export function MobileChat({ data, act, base, token, busy }) {
   }
   return (
     <View>
-      <Button
+      {!current && <Button
         title={creating ? "Back to messages" : "New conversation"}
         disabled={disabled}
         onPress={() => setCreating(!creating)}
-      />
+      />}
       {error ? (
         <Text accessibilityRole="alert" style={s.error}>
           {error}
@@ -193,33 +206,34 @@ export function MobileChat({ data, act, base, token, busy }) {
         </View>
       ) : (
         <>
-          <View>
-            {data.conversations.map((c) => (
-              <Button
+          {!current && <View>
+            <TextInput style={s.input} accessibilityLabel="Search conversations" placeholder="Search conversations" value={search} onChangeText={setSearch} />
+            {data.conversations.filter((c) => title(c).toLowerCase().includes(search.toLowerCase())).map((c) => {
+              const last = data.messages.filter((m) => m.channel === c.id).at(-1);
+              return <Pressable
                 key={c.id}
-                title={
-                  (current?.id === c.id ? "✓ " : "") +
-                  (c.kind === "direct"
-                    ? c.members
-                        .filter((m) => m.id !== data.user.id)
-                        .map((m) => m.name)
-                        .join(", ")
-                    : c.name) +
-                  (c.unread ? " · " + c.unread + " unread" : "")
-                }
+                accessibilityRole="button"
+                accessibilityLabel={title(c) + (c.unread ? `, ${c.unread} unread` : "")}
+                style={s.conversation}
                 disabled={disabled}
-                onPress={() => {
-                  setSelected(c.id);
-                  setDraft("");
-                  setFiles([]);
-                }}
-              />
-            ))}
-          </View>
+                onPress={() => openConversation(c)}
+              >
+                <View style={s.avatar}><Text style={s.initial}>{title(c).slice(0, 1)}</Text></View>
+                <View style={{ flex: 1, gap: 5 }}><Text style={s.conversationTitle} numberOfLines={1}>{title(c)}</Text><Text style={s.preview} numberOfLines={1}>{last ? last.deleted ? "Message removed" : last.text || "Attachment" : "Start the conversation"}</Text></View>
+                {c.unread > 0 && <View style={s.badge}><Text style={{color: "white"}}>{c.unread}</Text></View>}
+              </Pressable>;
+            })}
+            {data.conversations.length > 0 && !data.conversations.some((c) => title(c).toLowerCase().includes(search.toLowerCase())) && <Text style={s.preview}>No matching conversations.</Text>}
+          </View>}
           {current ? (
             <>
-              <Text style={s.title}>{current.name}</Text>
-              <NativeGroupTools
+              <View style={s.toolbar}>
+                <Pressable accessibilityRole="button" style={s.quietButton} disabled={disabled} onPress={() => { setSelected(""); setDetails(false); onScreenChange?.(); }}><Text style={s.link}>‹ Inbox</Text></Pressable>
+                <Pressable accessibilityRole="button" accessibilityState={{ expanded: details }} style={s.quietButton} onPress={() => setDetails(!details)}><Text style={s.link}>{details ? "Close details" : "Details"}</Text></Pressable>
+              </View>
+              <Text style={s.conversationHeading}>{title(current)}</Text>
+              <Text style={s.preview}>{current.kind === "group" ? `${current.members.length} members` : "Direct message"}</Text>
+              {details && <View style={s.card}><NativeGroupTools
                 data={data}
                 act={act}
                 busy={disabled}
@@ -240,22 +254,23 @@ export function MobileChat({ data, act, base, token, busy }) {
                     })
                   }
                 />
-              )}
+              )}</View>}
               {data.messages
                 .filter((m) => m.channel === current.id)
                 .map((m) => (
-                  <View style={s.card} key={m.id}>
-                    <Text>
+                  <View style={[s.bubble, m.authorId === data.user.id && s.mine]} key={m.id}>
+                    <Text style={s.metadata}>
                       {m.author} · {new Date(m.createdAt).toLocaleString()}
                     </Text>
-                    <Text>
+                    <Text style={s.messageText}>
                       {m.deleted
                         ? m.moderated
                           ? "Message removed after staff review"
                           : "Message removed by its author"
                         : m.text}
                     </Text>
-                    {!m.deleted && (
+                    {!m.deleted && <Pressable accessibilityRole="button" accessibilityLabel={"Options for message from " + m.author} style={s.messageOptions} onPress={() => setActions(actions === m.id ? "" : m.id)}><Text style={s.link}>···</Text></Pressable>}
+                    {!m.deleted && actions === m.id && (
                       <MobileReportMessage
                         message={m}
                         act={act}
@@ -287,12 +302,12 @@ export function MobileChat({ data, act, base, token, busy }) {
                       channel: current.id,
                       messageId: data.messages
                         .filter((m) => m.channel === current.id)
-                        .at(-1).id,
+                        .at(-1)?.id,
                     })
                   }
                 />
               )}
-              <TextInput
+              <View style={s.composer}><TextInput
                 style={s.input}
                 accessibilityLabel="Message"
                 placeholder="Write a message"
@@ -312,11 +327,10 @@ export function MobileChat({ data, act, base, token, busy }) {
                   }
                 />
               ))}
-              <Button
-                title="Attach PDF or image · 10 MB maximum"
+              <View style={s.toolbar}><Pressable accessibilityRole="button" accessibilityLabel="Attach PDF or image, maximum 10 MB" style={s.quietButton}
                 disabled={disabled || files.length >= 3}
                 onPress={attach}
-              />
+              ><Text style={s.link}>+ Attach</Text></Pressable>
               <Button
                 title={working ? "Working…" : "Send"}
                 disabled={disabled || (!draft.trim() && !files.length)}
@@ -334,10 +348,10 @@ export function MobileChat({ data, act, base, token, busy }) {
                     }
                   })
                 }
-              />
+              /></View></View>
             </>
           ) : (
-            <Text>No conversations yet. Start one above.</Text>
+            !data.conversations.length && <Text style={s.preview}>No conversations yet. Start one above.</Text>
           )}
         </>
       )}
@@ -444,6 +458,22 @@ export function MobileRedeem({ api, initialLink = "", onDone, onCancel }) {
   );
 }
 const s = StyleSheet.create({
+  conversation: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 20, borderBottomWidth: 1, borderBottomColor: "#e3eaf0" },
+  avatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: "#e6f3ff", alignItems: "center", justifyContent: "center" },
+  initial: { color: "#0069b8", fontSize: 20, fontWeight: "700" },
+  conversationTitle: { fontSize: 16, color: "#172b42", fontWeight: "700" },
+  conversationHeading: { fontSize: 22, color: "#172b42", fontWeight: "700", marginVertical: 8 },
+  preview: { fontSize: 14, color: "#526579", lineHeight: 21 },
+  badge: { backgroundColor: "#0077cc", borderRadius: 14, minWidth: 28, padding: 5, alignItems: "center" },
+  toolbar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  quietButton: { minHeight: 44, padding: 10, justifyContent: "center" },
+  link: { color: "#0069b8", fontWeight: "600", fontSize: 15 },
+  bubble: { padding: 14, backgroundColor: "#fff", borderRadius: 18, marginTop: 16, maxWidth: "94%", alignSelf: "flex-start", gap: 8 },
+  mine: { backgroundColor: "#e2f1ff", alignSelf: "flex-end" },
+  metadata: { fontSize: 12, color: "#526579" },
+  messageText: { fontSize: 16, lineHeight: 24, color: "#172b42" },
+  messageOptions: { alignSelf: "flex-end", minHeight: 44, minWidth: 44, alignItems: "center", justifyContent: "center" },
+  composer: { marginTop: 20, borderTopWidth: 1, borderTopColor: "#dce5ed", paddingTop: 8 },
   card: {
     padding: 16,
     backgroundColor: "#fff",

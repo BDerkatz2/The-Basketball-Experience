@@ -15,6 +15,8 @@ module.exports = ({ config }) => {
   }
   return {
     ...config,
+    experiments: { ...config.experiments, ...(env.MOBILE_WEB_BASE_PATH ? { baseUrl: env.MOBILE_WEB_BASE_PATH } : {}) },
+    platforms: [...new Set([...(config.platforms || []), "web"])],
     ios: {
       ...config.ios,
       ...(env.IOS_BUNDLE_IDENTIFIER

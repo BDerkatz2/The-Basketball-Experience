@@ -16,3 +16,4 @@ GoogleService-Info.plist
 *.log
 mobile/node_modules/
 mobile/.expo/
+mobile/dist-preview/
