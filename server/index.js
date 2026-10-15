@@ -766,7 +766,9 @@ app.post(
     serialize(
       async () => {
         const purpose = req.query.purpose;
-        if (!["video", "staff", "message"].includes(purpose))
+        if (purpose === "content" && req.user.role !== "admin")
+          fail("Administrator access required.", 403);
+        if (!["video", "staff", "message", "content"].includes(purpose))
           fail("Choose a file purpose.");
         if (
           purpose !== "message" &&
@@ -806,6 +808,12 @@ app.post(
           fail("Upload MP4/WebM video or PDF/PNG/JPEG documents.");
         if (purpose !== "video" && bytes.length > 10 * 1024 * 1024)
           fail("Documents must be 10 MB or smaller.");
+        if (
+          purpose === "content" &&
+          (!["image/png", "image/jpeg"].includes(type) ||
+            bytes.length > 5 * 1024 * 1024)
+        )
+          fail("Content photos must be PNG or JPEG, 5 MB or smaller.");
         const uploadKey = req.get("X-Upload-Key");
         const digest = createHash("sha256").update(bytes).digest("hex");
         if (uploadKey && !/^[a-zA-Z0-9_-]{8,100}$/.test(uploadKey))

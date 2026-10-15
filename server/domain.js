@@ -75,6 +75,8 @@ export function visible(db, u) {
 }
 export function mutate(db, u, action, b) {
   if (action === "enroll") {
+    if (db.programs.find((p) => p.id === b.programId)?.archivedAt)
+      fail("Registration is closed for this program.", 409);
     if (!["parent", "admin", "staff"].includes(u.role))
       fail("Parent or staff access required.", 403);
     const p = player(db, u, b.playerId),

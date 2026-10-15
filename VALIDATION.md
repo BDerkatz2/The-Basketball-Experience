@@ -1,5 +1,7 @@
 # Validation record
 
+October 15: administrator page text/photo editing, product photos and program archive/restore implemented. **115 tests, web build and iOS/Android exports pass.** See [CONTENT-EDITOR.md](CONTENT-EDITOR.md). The invitation-only Render pilot is now hosted; the October 14 entry below records its pre-deployment state.
+
 October 14: invitation-only company pilot configuration and Render deployment blueprint prepared. **112 tests and web build pass. Hosting has not been activated or verified.** See [PILOT-HANDOFF.md](PILOT-HANDOFF.md).
 
 October 5: product/play archive and restore controls are available on web and native. Existing orders and play records are preserved; archived products cannot be newly ordered. **110 tests pass**, plus web build and iOS/Android exports. See [ARCHIVING.md](ARCHIVING.md).

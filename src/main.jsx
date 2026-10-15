@@ -47,6 +47,7 @@ import {
   ArrowDownToLine,
 } from "lucide-react";
 import "./style.css";
+import { ContentEditor, ContentImage, contentFor } from "./content-editor.jsx";
 import { AccountLogin } from "./accounts.jsx";
 import { TrainingPlans } from "./training-plans.jsx";
 import { FamilyCalendar } from "./calendar.jsx";
@@ -601,12 +602,13 @@ function App() {
                 })}
               </p>
               <h1>
-                {page === "home"
-                  ? `Good to see you, ${u.name.split(" ")[0]}.`
-                  : names[page]}
+                {contentFor(data, page).title ||
+                  (page === "home"
+                    ? `Good to see you, ${u.name.split(" ")[0]}.`
+                    : names[page])}
               </h1>
               <p className="muted">
-                {
+                {contentFor(data, page).description ||
                   {
                     home: "A little progress, every day. Here’s what’s happening in your community.",
                     calendar:
@@ -620,8 +622,7 @@ function App() {
                     league: "Your teams, your games, your season.",
                     messages: "Stay connected, on and off the court.",
                     admin: "Keep your community moving.",
-                  }[page]
-                }
+                  }[page]}
               </p>
             </div>
             {page === "home" ? (
@@ -645,6 +646,9 @@ function App() {
               </Button>
             ) : null}
           </div>
+          {contentFor(data, page).imageId && (
+            <ContentImage entry={contentFor(data, page)} />
+          )}
           {error && !modal && (
             <div className="error" role="alert">
               {error}
@@ -657,19 +661,22 @@ function App() {
             <>
               <div className="overview-grid">
                 <section className="hero">
+                  {contentFor(data, "hero").imageId && (
+                    <ContentImage
+                      entry={contentFor(data, "hero")}
+                      className="content-hero-photo"
+                    />
+                  )}
                   <div>
                     <span className="hero-tag">
                       <span /> SASKATOON BASKETBALL
                     </span>
                     <h2>
-                      EVOLVE YOUR
-                      <br />
-                      GAME.
+                      {contentFor(data, "hero").title || "EVOLVE YOUR GAME."}
                     </h2>
                     <p>
-                      A new season of learning, competing,
-                      <br />
-                      and becoming your best.
+                      {contentFor(data, "hero").description ||
+                        "A new season of learning, competing, and becoming your best."}
                     </p>
                     <button onClick={() => go("training")}>
                       Let’s get to work <ArrowUpRight size={18} />
@@ -822,48 +829,50 @@ function App() {
           )}
           {page === "programs" && (
             <div className="program-grid">
-              {data.programs.map((a, i) => (
-                <article className="card program-card" key={a.id}>
-                  <div className={"program-art art" + (i % 3)}>
-                    <div className="court-small" />
-                    <span>
-                      {a.type === "League"
-                        ? "PLAY TOGETHER."
-                        : "FIND YOUR EDGE."}
-                    </span>
-                    <Badge>{a.type}</Badge>
-                  </div>
-                  <div className="program-body">
-                    <div className="inline between">
-                      <small className="eyebrow">AGES {a.ages}</small>
-                      <small className="muted">{a.sessions} sessions</small>
+              {data.programs
+                .filter((a) => !a.archivedAt)
+                .map((a, i) => (
+                  <article className="card program-card" key={a.id}>
+                    <div className={"program-art art" + (i % 3)}>
+                      <div className="court-small" />
+                      <span>
+                        {a.type === "League"
+                          ? "PLAY TOGETHER."
+                          : "FIND YOUR EDGE."}
+                      </span>
+                      <Badge>{a.type}</Badge>
                     </div>
-                    <h3>{a.name}</h3>
-                    <p>{a.description}</p>
-                    <ProgramEligibility program={a} />
-                    <p className="inline">
-                      <MapPin size={15} />
-                      {a.location}
-                    </p>
-                    <div className="program-bottom">
-                      <b>
-                        {money(a.price)}
-                        <small> / player</small>
-                      </b>
-                      {parent ? (
-                        <Button
-                          secondary
-                          onClick={() => open({ type: "enroll", a })}
-                        >
-                          Register <ArrowUpRight size={16} />
-                        </Button>
-                      ) : (
-                        <Badge>Ask a parent to register</Badge>
-                      )}
+                    <div className="program-body">
+                      <div className="inline between">
+                        <small className="eyebrow">AGES {a.ages}</small>
+                        <small className="muted">{a.sessions} sessions</small>
+                      </div>
+                      <h3>{a.name}</h3>
+                      <p>{a.description}</p>
+                      <ProgramEligibility program={a} />
+                      <p className="inline">
+                        <MapPin size={15} />
+                        {a.location}
+                      </p>
+                      <div className="program-bottom">
+                        <b>
+                          {money(a.price)}
+                          <small> / player</small>
+                        </b>
+                        {parent ? (
+                          <Button
+                            secondary
+                            onClick={() => open({ type: "enroll", a })}
+                          >
+                            Register <ArrowUpRight size={16} />
+                          </Button>
+                        ) : (
+                          <Badge>Ask a parent to register</Badge>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                ))}
             </div>
           )}
           {page === "family" && (
@@ -947,10 +956,16 @@ function App() {
                   .map((p, i) => (
                     <article key={p.id} className="card product-card">
                       <div className={"product-art product" + i}>
-                        <Shirt
-                          hoodie={i === 1}
-                          number={i === 2 ? "12" : null}
-                        />
+                        {contentFor(data, "product:" + p.id).imageId ? (
+                          <ContentImage
+                            entry={contentFor(data, "product:" + p.id)}
+                          />
+                        ) : (
+                          <Shirt
+                            hoodie={i === 1}
+                            number={i === 2 ? "12" : null}
+                          />
+                        )}
                         {p.creditEligible && (
                           <Badge>TEE CREDITS ELIGIBLE</Badge>
                         )}
@@ -1326,6 +1341,7 @@ function App() {
           )}
           {page === "admin" && staff && (
             <>
+              <ContentEditor data={data} act={act} refresh={refresh} />
               <Management data={data} act={act} />
               <AdminReports />
               <Moderation data={data} act={act} />

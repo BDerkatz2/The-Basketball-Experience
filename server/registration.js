@@ -5,7 +5,7 @@ export function eligibility(db, u, b, now = Date.now()) {
   const program = db.programs.find((x) => x.id === b.programId);
   if (!program) fail("Program not found.", 404);
   const r = program.registration || {};
-  if (program.registrationClosed || r.closed)
+  if (program.archivedAt || program.registrationClosed || r.closed)
     fail("Registration is closed for this program.", 409);
   if (r.opensAt && now < Date.parse(r.opensAt))
     fail("Registration has not opened yet.", 409);

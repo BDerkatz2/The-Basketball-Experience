@@ -1753,11 +1753,19 @@ export function Management({ data, act }) {
             any time.
           </p>
         )}
+        {kind === "Programs" && (
+          <p>
+            Archive hides programs from new registrations. Existing
+            registrations, payments and schedules remain. Restore does not
+            reopen closed registration rules.
+          </p>
+        )}
         {config.rows.map((row) => (
           <div className="feature-row" key={row.id}>
             <div>
               <b>
                 {row.name}
+                {kind === "Programs" && row.archivedAt ? " · Archived" : ""}
                 {kind === "Products" && row.archivedAt
                   ? " · Archived (hidden from store)"
                   : ""}
@@ -1775,6 +1783,14 @@ export function Management({ data, act }) {
                 row.archivedAt ? "Restore product" : "Archive product",
                 () =>
                   act(row.archivedAt ? "product-restore" : "product-archive", {
+                    id: row.id,
+                  }),
+              )}
+            {kind === "Programs" &&
+              button(
+                row.archivedAt ? "Restore program" : "Archive program",
+                () =>
+                  act(row.archivedAt ? "program-restore" : "program-archive", {
                     id: row.id,
                   }),
               )}

@@ -56,148 +56,154 @@ export function Programs({ data, act, busy }) {
   const parent = ["parent", "admin", "staff"].includes(data.user.role);
   return (
     <>
-      {data.programs.map((p) => {
-        const form = data.forms?.find((f) => f.id === p.formId);
-        return (
-          <View key={p.id} style={s.card}>
-            <Text style={s.tag}>
-              {p.type} · Ages {p.ages}
-            </Text>
-            <Text style={s.title}>{p.name}</Text>
-            <Text style={s.body}>{p.description}</Text>
-            {(p.registration || p.registrationClosed) && (
-              <Text style={s.body}>
-                {p.season ? p.season + " · " : ""}
-                {p.registrationClosed || p.registration?.closed
-                  ? "Registration closed. "
-                  : ""}
-                {p.registration?.minAge != null
-                  ? `Minimum age ${p.registration.minAge}. `
-                  : ""}
-                {p.registration?.maxAge != null
-                  ? `Maximum age ${p.registration.maxAge}. `
-                  : ""}
-                {p.registration?.membersOnly
-                  ? "Active family membership required. "
-                  : ""}
-                {p.registration?.opensAt
-                  ? `Opens ${new Date(p.registration.opensAt).toLocaleString()}. `
-                  : ""}
-                {p.registration?.closesAt
-                  ? `Closes ${new Date(p.registration.closesAt).toLocaleString()}. `
-                  : ""}
+      {data.programs
+        .filter((p) => !p.archivedAt)
+        .map((p) => {
+          const form = data.forms?.find((f) => f.id === p.formId);
+          return (
+            <View key={p.id} style={s.card}>
+              <Text style={s.tag}>
+                {p.type} · Ages {p.ages}
               </Text>
-            )}
-            <Text style={s.label}>
-              ${p.price} CAD · {p.sessions} sessions
-            </Text>
-            {parent && selected !== p.id && (
-              <Button
-                label="Register a player"
-                onPress={() => {
-                  setSelected(p.id);
-                  setAccepted(false);
-                  setSignature("");
-                  setAnswers({});
-                }}
-              />
-            )}
-            {selected === p.id && (
-              <>
-                <Choose
-                  label="Player"
-                  rows={data.players}
-                  value={playerId}
-                  onChange={setPlayer}
-                />
-                {form?.fields.map((f) => (
-                  <View key={f.id}>
-                    <Text style={s.label}>
-                      {f.label}
-                      {f.required ? " *" : ""}
-                    </Text>
-                    {f.type === "checkbox" ? (
-                      <Switch
-                        accessibilityLabel={f.label}
-                        value={answers[f.id] === true}
-                        onValueChange={(v) =>
-                          setAnswers({ ...answers, [f.id]: v })
-                        }
-                      />
-                    ) : f.type === "select" ? (
-                      <Choose
-                        label={f.label}
-                        rows={f.options.map((o) => ({ id: o, name: o }))}
-                        value={answers[f.id] || ""}
-                        onChange={(v) => setAnswers({ ...answers, [f.id]: v })}
-                      />
-                    ) : (
-                      <TextInput
-                        multiline={f.type === "textarea"}
-                        keyboardType={
-                          f.type === "email"
-                            ? "email-address"
-                            : f.type === "number"
-                              ? "decimal-pad"
-                              : "default"
-                        }
-                        placeholder={
-                          f.type === "date" ? "YYYY-MM-DD" : undefined
-                        }
-                        accessibilityLabel={f.label}
-                        style={s.input}
-                        maxLength={2000}
-                        value={answers[f.id] || ""}
-                        onChangeText={(v) =>
-                          setAnswers({ ...answers, [f.id]: v })
-                        }
-                      />
-                    )}
-                  </View>
-                ))}
+              <Text style={s.title}>{p.name}</Text>
+              <Text style={s.body}>{p.description}</Text>
+              {(p.registration || p.registrationClosed) && (
                 <Text style={s.body}>
-                  {form?.waiverText ||
-                    "Demonstration acknowledgement only. No payment is taken by this registration."}
+                  {p.season ? p.season + " · " : ""}
+                  {p.registrationClosed || p.registration?.closed
+                    ? "Registration closed. "
+                    : ""}
+                  {p.registration?.minAge != null
+                    ? `Minimum age ${p.registration.minAge}. `
+                    : ""}
+                  {p.registration?.maxAge != null
+                    ? `Maximum age ${p.registration.maxAge}. `
+                    : ""}
+                  {p.registration?.membersOnly
+                    ? "Active family membership required. "
+                    : ""}
+                  {p.registration?.opensAt
+                    ? `Opens ${new Date(p.registration.opensAt).toLocaleString()}. `
+                    : ""}
+                  {p.registration?.closesAt
+                    ? `Closes ${new Date(p.registration.closesAt).toLocaleString()}. `
+                    : ""}
                 </Text>
-                <View style={s.options}>
-                  <Switch
-                    accessibilityLabel="Accept registration terms"
-                    value={accepted}
-                    onValueChange={setAccepted}
-                  />
-                  <Text style={s.label}>I accept the terms above.</Text>
-                </View>
-                <TextInput
-                  accessibilityLabel="Guardian signature"
-                  style={s.input}
-                  placeholder="Parent / guardian full name"
-                  value={signature}
-                  onChangeText={setSignature}
-                  maxLength={100}
-                />
+              )}
+              <Text style={s.label}>
+                ${p.price} CAD · {p.sessions} sessions
+              </Text>
+              {parent && selected !== p.id && (
                 <Button
-                  label="Complete registration"
-                  disabled={busy || !accepted || !signature.trim() || !playerId}
-                  onPress={async () => {
-                    if (
-                      await act("enroll", {
-                        programId: p.id,
-                        playerId,
-                        accepted,
-                        signature,
-                        formId: form?.id,
-                        answers,
-                      })
-                    )
-                      setSelected(null);
+                  label="Register a player"
+                  onPress={() => {
+                    setSelected(p.id);
+                    setAccepted(false);
+                    setSignature("");
+                    setAnswers({});
                   }}
                 />
-                <Button label="Close" onPress={() => setSelected(null)} />
-              </>
-            )}
-          </View>
-        );
-      })}
+              )}
+              {selected === p.id && (
+                <>
+                  <Choose
+                    label="Player"
+                    rows={data.players}
+                    value={playerId}
+                    onChange={setPlayer}
+                  />
+                  {form?.fields.map((f) => (
+                    <View key={f.id}>
+                      <Text style={s.label}>
+                        {f.label}
+                        {f.required ? " *" : ""}
+                      </Text>
+                      {f.type === "checkbox" ? (
+                        <Switch
+                          accessibilityLabel={f.label}
+                          value={answers[f.id] === true}
+                          onValueChange={(v) =>
+                            setAnswers({ ...answers, [f.id]: v })
+                          }
+                        />
+                      ) : f.type === "select" ? (
+                        <Choose
+                          label={f.label}
+                          rows={f.options.map((o) => ({ id: o, name: o }))}
+                          value={answers[f.id] || ""}
+                          onChange={(v) =>
+                            setAnswers({ ...answers, [f.id]: v })
+                          }
+                        />
+                      ) : (
+                        <TextInput
+                          multiline={f.type === "textarea"}
+                          keyboardType={
+                            f.type === "email"
+                              ? "email-address"
+                              : f.type === "number"
+                                ? "decimal-pad"
+                                : "default"
+                          }
+                          placeholder={
+                            f.type === "date" ? "YYYY-MM-DD" : undefined
+                          }
+                          accessibilityLabel={f.label}
+                          style={s.input}
+                          maxLength={2000}
+                          value={answers[f.id] || ""}
+                          onChangeText={(v) =>
+                            setAnswers({ ...answers, [f.id]: v })
+                          }
+                        />
+                      )}
+                    </View>
+                  ))}
+                  <Text style={s.body}>
+                    {form?.waiverText ||
+                      "Demonstration acknowledgement only. No payment is taken by this registration."}
+                  </Text>
+                  <View style={s.options}>
+                    <Switch
+                      accessibilityLabel="Accept registration terms"
+                      value={accepted}
+                      onValueChange={setAccepted}
+                    />
+                    <Text style={s.label}>I accept the terms above.</Text>
+                  </View>
+                  <TextInput
+                    accessibilityLabel="Guardian signature"
+                    style={s.input}
+                    placeholder="Parent / guardian full name"
+                    value={signature}
+                    onChangeText={setSignature}
+                    maxLength={100}
+                  />
+                  <Button
+                    label="Complete registration"
+                    disabled={
+                      busy || !accepted || !signature.trim() || !playerId
+                    }
+                    onPress={async () => {
+                      if (
+                        await act("enroll", {
+                          programId: p.id,
+                          playerId,
+                          accepted,
+                          signature,
+                          formId: form?.id,
+                          answers,
+                        })
+                      )
+                        setSelected(null);
+                    }}
+                  />
+                  <Button label="Close" onPress={() => setSelected(null)} />
+                </>
+              )}
+            </View>
+          );
+        })}
     </>
   );
 }

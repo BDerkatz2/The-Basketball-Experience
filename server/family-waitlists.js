@@ -155,6 +155,8 @@ export function waitlistAction(db, u, action, b) {
     return;
   }
   if (!isStaff(u)) fail("Staff access required.", 403);
+  if (db.programs.find((p) => p.id === row.programId)?.archivedAt)
+    fail("Restore the program before offering a spot.", 409);
   if (row.status !== "Waiting") fail("Choose a waiting player.", 409);
   const first = waiting(db, row.programId)[0];
   if (first.id !== row.id)

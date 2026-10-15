@@ -1,3 +1,4 @@
+import { contentAction } from "./content.js";
 import { defineField, answerField, onboardingAction } from "./form-fields.js";
 import {
   storeUpgrade,
@@ -49,6 +50,7 @@ export function upgrade(db) {
     "brackets",
     "gameStats",
     "plays",
+    "siteContent",
     "videos",
     "audit",
     "files",
@@ -282,11 +284,13 @@ export function visible(db, u) {
           ),
       )
       .filter((f) =>
-        f.purpose === "message"
-          ? canReadMessageFile(db, u, f)
-          : f.purpose === "staff"
-            ? u.role === "admin" || f.ownerId === u.id
-            : ch.includes(f.teamId),
+        f.purpose === "content"
+          ? u.role === "admin" || db.siteContent.some((c) => c.imageId === f.id)
+          : f.purpose === "message"
+            ? canReadMessageFile(db, u, f)
+            : f.purpose === "staff"
+              ? u.role === "admin" || f.ownerId === u.id
+              : ch.includes(f.teamId),
       ),
     staffDirectory:
       isStaff(u) || u.role === "coach"
@@ -338,6 +342,15 @@ export function mutate(db, u, action, b) {
   });
 }
 function change(db, u, action, b) {
+  if (action === "content-publish") return contentAction(db, u, b);
+  if (action === "program-archive" || action === "program-restore") {
+    staff(u);
+    const p = db.programs.find((p) => p.id === b.id);
+    if (!p) fail("Program not found.", 404);
+    p.archivedAt =
+      action === "program-archive" ? p.archivedAt || stamp() : null;
+    return;
+  }
   if (
     [
       "product-archive",
