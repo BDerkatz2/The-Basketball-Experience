@@ -486,7 +486,7 @@ export function LiveScorekeeper({ data, act, busy }) {
   );
 }
 
-function cartEstimate(data, cart) {
+export function cartEstimate(data, cart) {
   const balances = Object.fromEntries(
     (data.creditBalances || []).map((c) => [c.playerId, c.remaining]),
   );

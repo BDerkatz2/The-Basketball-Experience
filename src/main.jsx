@@ -1,9 +1,6 @@
+import { Storefront } from "./storefront.jsx";
 import { OnboardingRecords } from "./onboarding-records.jsx";
-import {
-  CartStore,
-  StoreConfiguration,
-  LiveScorekeeper,
-} from "./quote-tools.jsx";
+import { StoreConfiguration, LiveScorekeeper } from "./quote-tools.jsx";
 import { RegistrationRules, ProgramEligibility } from "./registration.jsx";
 import {
   Refunds,
@@ -592,7 +589,7 @@ function App() {
               Changes are saved for other invited testers.
             </p>
           )}
-          <div className="page-heading">
+          <div className="page-heading" hidden={page === "store"}>
             <div>
               <p className="eyebrow">
                 {new Date().toLocaleDateString("en-CA", {
@@ -938,62 +935,7 @@ function App() {
           )}
           {page === "store" && (
             <>
-              <div className="notice">
-                <ShoppingBag size={20} />
-                <div>
-                  <b>A little something for your team.</b>
-                  <p>
-                    Players receive clothing credits with staff adjustments.
-                    Link every order to a player for coach delivery.
-                  </p>
-                </div>
-                <Badge tone="orange">Demo checkout · no charges</Badge>
-              </div>
-              <CartStore data={data} act={act} busy={busy} />
-              <div className="program-grid">
-                {data.products
-                  .filter((p) => !p.archivedAt)
-                  .map((p, i) => (
-                    <article key={p.id} className="card product-card">
-                      <div className={"product-art product" + i}>
-                        {contentFor(data, "product:" + p.id).imageId ? (
-                          <ContentImage
-                            entry={contentFor(data, "product:" + p.id)}
-                          />
-                        ) : (
-                          <Shirt
-                            hoodie={i === 1}
-                            number={i === 2 ? "12" : null}
-                          />
-                        )}
-                        {p.creditEligible && (
-                          <Badge>TEE CREDITS ELIGIBLE</Badge>
-                        )}
-                      </div>
-                      <div className="program-body">
-                        <small className="eyebrow">
-                          {p.category} / {p.color}
-                        </small>
-                        <h3>{p.name}</h3>
-                        <div className="program-bottom">
-                          <b>{money(p.price)}</b>
-                          {parent && (
-                            <Button
-                              secondary
-                              onClick={() =>
-                                document
-                                  .querySelector(".operations-panel")
-                                  ?.scrollIntoView({ behavior: "smooth" })
-                              }
-                            >
-                              Build cart <Plus size={16} />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-              </div>
+              <Storefront data={data} act={act} busy={busy} />
               <section className="card space-top">
                 <CardHead label={staff ? "Fulfillment queue" : "Your orders"} />
                 {data.orders.length ? (

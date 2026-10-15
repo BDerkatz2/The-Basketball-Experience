@@ -64,3 +64,9 @@ Web calendar update: 60 tests pass and production build passes. Added tests for 
 Native calendar update: all 61 tests pass. Android 615-module and iOS 617-module bundles and the web build pass. Shared date helpers cover month-end, leap-day, week boundaries and overnight sessions. Mobile filter tests cover player, search, cancellation and source-order preservation. The mobile Schedule tab now offers month/week/agenda, date navigation and selected-day RSVP/check-in controls. Hardware layout, font scaling, screen-reader traversal and touch QA remain outstanding.
 
 Training plans: 64 tests pass; web and Android/iOS builds pass. Tests cover immutable ordered exercise snapshots, roster restrictions, weekly DST behavior, duplicate-assignment rejection and ordinary result completion. Browser verified saving a two-exercise sample plan and its availability for assignment. Native plan authoring and physical-device QA remain outstanding.
+
+## Storefront redesign — October 15, 2026
+
+The web store now uses the supplied reference layout: a white catalog, category/price/color/size filters, sorting, large product images, and a separate product detail view. Sample tee, hoodie and jersey illustrations are bundled locally; published admin product photos take precedence. Existing products, prices and inventory are preserved.
+
+Validation: 115 automated tests passed; production build passed. Browser testing verified required color/size choices, add-to-cart, inventory reservation and order-to-invoice confirmation using a local demo parent. Category filtering and a 390px mobile catalog were checked. Live payment methods remain outside this visual update.
